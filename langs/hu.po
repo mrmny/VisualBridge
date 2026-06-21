@@ -1,0 +1,95 @@
+msgid "🌲 VisualBridge – Vizuális Akadálymentesítő Asszisztens"
+msgstr "🌲 VisualBridge – Vizuális Akadálymentesítő Asszisztens"
+
+msgid "Segítség az autizmus spektrumzavarral és beszédfogyatékossággal élő gyermekek oktatásában."
+msgstr "Segítség az autizmus spektrumzavarral és beszédfogyatékossággal élő gyermekek oktatásában."
+
+msgid "⚠️ Figyelem: A GEMINI_API_KEY környezeti változó nincs beállítva. A háttérben az ágens nem fog tudni működni!"
+msgstr "⚠️ Figyelem: A GEMINI_API_KEY környezeti változó nincs beállítva. A háttérben az ágens nem fog tudni működni!"
+
+msgid "🪪 Pedagógus / Szülő felület"
+msgstr "🪪 Pedagógus / Szülő felület"
+
+msgid "Írja be a nyers tananyagot vagy utasítást:"
+msgstr "Írja be a nyers tananyagot vagy utasítást:"
+
+msgid "Bemeneti szöveg:"
+msgstr "Bemeneti szöveg:"
+
+msgid "A tölgyfa hatalmas koronájával árnyékot ad. A tölgyfa vizet iszik a földből a gyökereivel."
+msgstr "A tölgyfa hatalmas koronájával árnyékot ad. A tölgyfa vizet iszik a földből a gyökereivel."
+
+msgid "🎲 Kvíz beállításai (Szövegértés ellenőrzése)"
+msgstr "🎲 Kvíz beállításai (Szövegértés ellenőrzése)"
+
+msgid "Helyes válasz szava (pl. mi kell a fának?):"
+msgstr "Helyes válasz szava (pl. mi kell a fának?):"
+
+msgid "víz"
+msgstr "víz"
+
+msgid "1. Rossz opció (Tévesztő):"
+msgstr "1. Rossz opció (Tévesztő):"
+
+msgid "autó"
+msgstr "autó"
+
+msgid "2. Rossz opció (Tévesztő):"
+msgstr "2. Rossz opció (Tévesztő):"
+
+msgid "csokoládé"
+msgstr "csokoládé"
+
+msgid "🚀 Vizuális anyag generálása"
+msgstr "🚀 Vizuális anyag generálása"
+
+msgid "Gyermek felület"
+msgstr "Gyermek felület"
+
+msgid "Az ágens dolgozik, tőmondatokat és piktogramokat készít..."
+msgstr "Az ágens dolgozik, tőmondatokat és piktogramokat készít..."
+
+msgid "Elkészült a vizuális tananyag!"
+msgstr "Elkészült a vizuális tananyag!"
+
+msgid "🧩 Ügyes vagy! Válaszolj a kérdésre:"
+msgstr "🧩 Ügyes vagy! Válaszolj a kérdésre:"
+
+msgid "Ez a(z) {word}"
+msgstr "Ez a(z) {word}"
+
+msgid "🌟 Szuper! Ez a helyes válasz! 🌟"
+msgstr "🌟 Szuper! Ez a helyes válasz! 🌟"
+
+msgid "❌ Próbáld meg még egyszer! ❌"
+msgstr "❌ Próbáld meg még egyszer! ❌"
+
+msgid "Hiba történt a feldolgozás során: {e}"
+msgstr "Hiba történt a feldolgozás során: {e}"
+
+msgid "Kérjük, ellenőrizze, hogy az API kulcsa érvényes-e és van-e internetkapcsolat."
+msgstr "Kérjük, ellenőrizze, hogy az API kulcsa érvényes-e és van-e internetkapcsolat."
+
+msgid "Kattints a bal oldalon a 'Vizuális anyag generálása' gombra a kezdéshez."
+msgstr "Kattints a bal oldalon a 'Vizuális anyag generálása' gombra a kezdéshez."
+
+msgid "ℹ️ Szimulációs (Mock) mód aktív: Az ágens API kulcs nélkül, helyi szimulációval működik."
+msgstr "ℹ️ Szimulációs (Mock) mód aktív: Az ágens API kulcs nélkül, helyi szimulációval működik."
+
+msgid "🔊 Felolvasás"
+msgstr "🔊 Felolvasás"
+
+msgid "Célcsoport profilja (sablon):"
+msgstr "Célcsoport profilja (sablon):"
+
+msgid "Semleges (Tölgyfa / Víz)"
+msgstr "Semleges (Tölgyfa / Víz)"
+
+msgid "Fiú (Autó / Busz)"
+msgstr "Fiú (Autó / Busz)"
+
+msgid "Lány (Baba / Labda)"
+msgstr "Lány (Baba / Labda)"
+
+
+

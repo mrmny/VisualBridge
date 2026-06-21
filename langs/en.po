@@ -1,0 +1,95 @@
+msgid "🌲 VisualBridge – Vizuális Akadálymentesítő Asszisztens"
+msgstr "🌲 VisualBridge – Visual Accessibility Assistant"
+
+msgid "Segítség az autizmus spektrumzavarral és beszédfogyatékossággal élő gyermekek oktatásában."
+msgstr "Supporting education for children with autism spectrum disorder and speech impairment."
+
+msgid "⚠️ Figyelem: A GEMINI_API_KEY környezeti változó nincs beállítva. A háttérben az ágens nem fog tudni működni!"
+msgstr "⚠️ Warning: The GEMINI_API_KEY environment variable is not set. The background agent will not be able to function!"
+
+msgid "🪪 Pedagógus / Szülő felület"
+msgstr "🪪 Educator / Parent Interface"
+
+msgid "Írja be a nyers tananyagot vagy utasítást:"
+msgstr "Enter raw learning material or instruction:"
+
+msgid "Bemeneti szöveg:"
+msgstr "Input text:"
+
+msgid "A tölgyfa hatalmas koronájával árnyékot ad. A tölgyfa vizet iszik a földből a gyökereivel."
+msgstr "The oak tree provides shade with its huge crown. The oak tree drinks water from the soil with its roots."
+
+msgid "🎲 Kvíz beállításai (Szövegértés ellenőrzése)"
+msgstr "🎲 Quiz Settings (Reading Comprehension Check)"
+
+msgid "Helyes válasz szava (pl. mi kell a fának?):"
+msgstr "Correct answer keyword (e.g. what does the tree need?):"
+
+msgid "víz"
+msgstr "water"
+
+msgid "1. Rossz opció (Tévesztő):"
+msgstr "1. Incorrect option (Distractor):"
+
+msgid "autó"
+msgstr "car"
+
+msgid "2. Rossz opció (Tévesztő):"
+msgstr "2. Incorrect option (Distractor):"
+
+msgid "csokoládé"
+msgstr "chocolate"
+
+msgid "🚀 Vizuális anyag generálása"
+msgstr "🚀 Generate Visual Material"
+
+msgid "Gyermek felület"
+msgstr "Child Interface"
+
+msgid "Az ágens dolgozik, tőmondatokat és piktogramokat készít..."
+msgstr "The agent is working, creating simple sentences and pictograms..."
+
+msgid "Elkészült a vizuális tananyag!"
+msgstr "Visual learning material is ready!"
+
+msgid "🧩 Ügyes vagy! Válaszolj a kérdésre:"
+msgstr "🧩 Well done! Answer the question:"
+
+msgid "Ez a(z) {word}"
+msgstr "This is {word}"
+
+msgid "🌟 Szuper! Ez a helyes válasz! 🌟"
+msgstr "🌟 Superb! That's the correct answer! 🌟"
+
+msgid "❌ Próbáld meg még egyszer! ❌"
+msgstr "❌ Try again! ❌"
+
+msgid "Hiba történt a feldolgozás során: {e}"
+msgstr "An error occurred during processing: {e}"
+
+msgid "Kérjük, ellenőrizze, hogy az API kulcsa érvényes-e és van-e internetkapcsolat."
+msgstr "Please check that your API key is valid and you have an internet connection."
+
+msgid "Kattints a bal oldalon a 'Vizuális anyag generálása' gombra a kezdéshez."
+msgstr "Click the 'Generate Visual Material' button on the left to start."
+
+msgid "ℹ️ Szimulációs (Mock) mód aktív: Az ágens API kulcs nélkül, helyi szimulációval működik."
+msgstr "ℹ️ Simulation (Mock) mode active: The agent is running without API key, using local simulation."
+
+msgid "🔊 Felolvasás"
+msgstr "🔊 Read Aloud"
+
+msgid "Célcsoport profilja (sablon):"
+msgstr "Target profile (template):"
+
+msgid "Semleges (Tölgyfa / Víz)"
+msgstr "Neutral (Oak tree / Water)"
+
+msgid "Fiú (Autó / Busz)"
+msgstr "Boy (Car / Bus)"
+
+msgid "Lány (Baba / Labda)"
+msgstr "Girl (Doll / Ball)"
+
+
+
