@@ -25,6 +25,12 @@ msgstr "🎲 Quiz Settings (Reading Comprehension Check)"
 msgid "Helyes válasz szava (pl. mi kell a fának?):"
 msgstr "Correct answer keyword (e.g. what does the tree need?):"
 
+msgid "Helyes válasz szava (pl. mi száguld gyorsan?):"
+msgstr "Correct answer keyword (e.g. what goes fast?):"
+
+msgid "Helyes válasz szava (pl. mivel játszik a kislány?):"
+msgstr "Correct answer keyword (e.g. what does the little girl play with?):"
+
 msgid "víz"
 msgstr "water"
 

@@ -25,6 +25,12 @@ msgstr "🎲 Kvíz beállításai (Szövegértés ellenőrzése)"
 msgid "Helyes válasz szava (pl. mi kell a fának?):"
 msgstr "Helyes válasz szava (pl. mi kell a fának?):"
 
+msgid "Helyes válasz szava (pl. mi száguld gyorsan?):"
+msgstr "Helyes válasz szava (pl. mi száguld gyorsan?):"
+
+msgid "Helyes válasz szava (pl. mivel játszik a kislány?):"
+msgstr "Helyes válasz szava (pl. mivel játszik a kislány?):"
+
 msgid "víz"
 msgstr "víz"
 

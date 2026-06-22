@@ -134,7 +134,7 @@ st.markdown("""
         font-weight: bold;
         text-align: center;
         text-transform: uppercase;
-        color: var(--text-color);
+        color: #1e293b !important;
         opacity: 0.9;
         margin-top: 8px;
     }
@@ -164,7 +164,7 @@ st.markdown("""
     /* HU: Piktogram kártya stílusa lebegő animációval */
     /* EN: Pictogram card style with hover animation */
     .pic-card {
-        background-color: var(--background-color) !important;
+        background-color: #e2e8f0 !important;
         border: 2px solid rgba(128, 128, 128, 0.15) !important;
         border-radius: 16px !important;
         padding: 12px !important;
@@ -249,15 +249,15 @@ TEMPLATES = {
         "hu": {
             "text": "A piros autó nagyon gyorsan száguld, a sárga busz pedig megáll.",
             "correct": "autó",
-            "dist1": "víz",
-            "dist2": CHOCOLATE_HU,
+            "dist1": "busz",
+            "dist2": "vonat",
             "icon": "👦"
         },
         "en": {
             "text": "The red car goes fast, but the yellow bus stops.",
             "correct": "car",
-            "dist1": "water",
-            "dist2": "chocolate",
+            "dist1": "bus",
+            "dist2": "train",
             "icon": "👦"
         }
     },
@@ -265,15 +265,15 @@ TEMPLATES = {
         "hu": {
             "text": "A kislány a szép babával játszik, miközben a pöttyös labda elgurul.",
             "correct": "baba",
-            "dist1": "víz",
-            "dist2": CHOCOLATE_HU,
+            "dist1": "labda",
+            "dist2": "maci",
             "icon": "👧"
         },
         "en": {
             "text": "The little girl plays with the beautiful doll, while the polka dot ball rolls away.",
             "correct": "doll",
-            "dist1": "water",
-            "dist2": "chocolate",
+            "dist1": "ball",
+            "dist2": "teddy bear",
             "icon": "👧"
         }
     }
@@ -328,7 +328,13 @@ with col1:
     # HU: Kvíz beállítási lehetőségek a szülőnek
     # EN: Quiz setup configuration for parents
     st.subheader(_("🎲 Kvíz beállításai (Szövegértés ellenőrzése)"))
-    correct_w = st.text_input(_("Helyes válasz szava (pl. mi kell a fának?):"), value=template["correct"], key=correct_key)
+    if st.session_state.current_profile == "boy":
+        correct_label = _("Helyes válasz szava (pl. mi száguld gyorsan?):")
+    elif st.session_state.current_profile == "girl":
+        correct_label = _("Helyes válasz szava (pl. mivel játszik a kislány?):")
+    else:
+        correct_label = _("Helyes válasz szava (pl. mi kell a fának?):")
+    correct_w = st.text_input(correct_label, value=template["correct"], key=correct_key)
     distractor_1 = st.text_input(_("1. Rossz opció (Tévesztő):"), value=template["dist1"], key=dist1_key)
     distractor_2 = st.text_input(_("2. Rossz opció (Tévesztő):"), value=template["dist2"], key=dist2_key)
 
@@ -374,7 +380,11 @@ with col2:
                     padding: 4px;
                     background: transparent;
                 }}
-                /* Custom styles for gradient, shadows, hover animations and dark mode support */
+                .card {{
+                    background-color: #e2e8f0 !important;
+                    border-color: rgba(128, 128, 128, 0.15) !important;
+                }}
+                /* Custom styles for gradient, shadows, hover animations */
                 .speak-btn-custom {{
                     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
                     box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
@@ -385,21 +395,12 @@ with col2:
                     transform: scale(1.08);
                     filter: brightness(1.1);
                 }}
-                @media (prefers-color-scheme: dark) {{
-                    .card {{
-                        background-color: #1e293b !important;
-                        border-color: #334155 !important;
-                    }}
-                    .card div {{
-                        color: #f8fafc !important;
-                    }}
-                }}
             </style>
             <div class="card p-3 d-flex flex-row justify-content-between align-items-center border-start border-primary border-4 shadow-sm">
-                <div class="fs-5 fw-bold text-dark">{sentence_text}</div>
-                <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center speak-btn-custom" 
-                        style="width: 44px; height: 44px; min-width: 44px; min-height: 44px; font-size: 18px;" 
-                        id="speak-btn" 
+                <div class="fs-5 fw-bold" style="color: #1e293b !important;">{sentence_text}</div>
+                <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center speak-btn-custom"
+                        style="width: 44px; height: 44px; min-width: 44px; min-height: 44px; font-size: 18px;"
+                        id="speak-btn"
                         title="{btn_tooltip}">🔊</button>
             </div>
             <script>
