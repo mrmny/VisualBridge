@@ -1,2 +1,2 @@
 #!/bin/bash
-pip install google-genai python-dotenv requests sphinx streamlit
+pip install fastmcp google-adk google-genai mcp python-dotenv requests sphinx streamlit

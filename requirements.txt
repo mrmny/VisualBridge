@@ -1,4 +1,7 @@
+fastmcp
+google-adk
 google-genai
+mcp
 python-dotenv
 requests
 sphinx
