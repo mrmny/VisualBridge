@@ -124,5 +124,12 @@ msgstr "Szimulációs (Mock) mód aktív."
 msgid "📖 Használati útmutató & Rendszerleírás"
 msgstr "📖 Használati útmutató & Rendszerleírás"
 
+msgid "💡 Miért ezt a projektet választottam? / Projekt háttér"
+msgstr "💡 Miért ezt a projektet választottam? / Projekt háttér"
+
+msgid "💡 Projekt háttér & Ágensek a jóért"
+msgstr "💡 Projekt háttér & Ágensek a jóért"
+
+
 
 

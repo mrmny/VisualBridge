@@ -99,10 +99,31 @@ def show_readme_dialog(lang):
         st.error(f"File {readme_file} not found.")
 
 
+@st.dialog("VisualBridge History", width="large")
+def show_history_dialog(lang):
+    st.subheader(_("💡 Projekt háttér & Ágensek a jóért"))
+    history_file = f"HISTORY_{lang}.md"
+    if os.path.exists(history_file):
+        with open(history_file, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        content = embed_local_images(content)
+
+        with st.container(height=650, key="history_container"):
+            st.markdown(content)
+    else:
+        st.error(f"File {history_file} not found.")
+
+
 # HU: "Olvass el" gomb a használati útmutató megnyitásához a nyelvválasztás felett
 # EN: "Read me" button to open the user guide above the language selector
 if st.sidebar.button(_("📖 Használati útmutató / Olvass el"), key="btn_readme_dialog", use_container_width=True):
     show_readme_dialog(st.session_state.current_lang)
+
+# HU: "Miért ezt a projektet választottam?" gomb a projekt hátterének bemutatására
+# EN: "Why I chose this project" button to show the project background
+if st.sidebar.button(_("💡 Miért ezt a projektet választottam? / Projekt háttér"), key="btn_history_dialog", use_container_width=True):
+    show_history_dialog(st.session_state.current_lang)
 
 
 # HU: Nyelvválasztó a beállításokhoz
@@ -196,9 +217,10 @@ st.markdown("""
         display: none !important;
     }
 
-    /* HU: README modal görgetősáv és méret korlátozás */
-    /* EN: README modal scrollbar and size constraint */
-    div.st-key-readme_container {
+    /* HU: README és HISTORY modal görgetősáv és méret korlátozás */
+    /* EN: README and HISTORY modal scrollbar and size constraint */
+    div.st-key-readme_container,
+    div.st-key-history_container {
         max-height: 65vh !important;
         height: auto !important;
     }
