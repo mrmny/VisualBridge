@@ -1,69 +1,98 @@
-# HU: Ágens logika és Google GenAI API hívások kezelése
-# EN: Agent logic and Google GenAI API integration
+# HU: Ágens logika és Google GenAI API hívások kezelése (ADK keretrendszerrel)
+# EN: Agent logic and Google GenAI API integration using Google ADK
 import os
 import json
-
-# HU: Új importok a .env kezeléséhez
-# EN: Imports for handling .env files
 from dotenv import load_dotenv
 
-# HU: Azonnal beolvassuk a .env fájlt, még a kliens indulása előtt
-# EN: Load the .env file immediately, before client initialization
-load_dotenv()
-
-# HU: Konstansok a SonarLint figyelmeztetések kiküszöbölésére
-# EN: Constants to resolve SonarLint duplicate literal warnings
-OAK_TREE_HU = "tölgyfa"
-
-
-# HU: Az új, hivatalos Google GenAI SDK importálása
-# EN: Import the official Google GenAI SDK
-from google import genai
+# HU: Google GenAI és ADK importok
+# EN: Google GenAI and ADK imports
 from google.genai import types
 
-# HU: Importáljuk az előbb megírt piktogram-kereső képességet
-# EN: Import the pictogram lookup skill
+from google.adk.agents import Agent
+from google.adk.runners import InMemoryRunner
+from google.adk.models.google_llm import Gemini
+from google.adk.tools import McpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams, StdioServerParameters
+
 from skills import fetch_pictogram_by_keyword
+
+# HU: Beolvassuk a .env fájlt
+# EN: Load the .env file
+load_dotenv()
+
+# HU: Az ADK elvárja a GOOGLE_API_KEY környezeti változót is
+# EN: ADK also expects the GOOGLE_API_KEY environment variable
+api_key = os.getenv("GEMINI_API_KEY")
+if api_key and api_key != "a_te_valodi_gemini_api_kulcsod":
+    os.environ["GOOGLE_API_KEY"] = api_key
+
+OAK_TREE_HU = "tölgyfa"
 
 class VisualBridgeAgent:
     """
-    HU: VisualBridge ágens koordinátor az egyszerűsítéshez és a vizualizációhoz.
-    EN: VisualBridge agent coordinator for text simplification and visualization mapping.
+    HU:
+        VisualBridge ágens koordinátor az egyszerűsítéshez és a vizualizációhoz (ADK alapú).
+    EN:
+        VisualBridge agent coordinator for text simplification and visualization mapping (ADK-based).
     """
     def __init__(self):
         # HU: Ellenőrizzük, hogy van-e valós API kulcs
         # EN: Check if there is a real API key configured
-        api_key = os.getenv("GEMINI_API_KEY")
-        self.is_mock = not api_key or api_key == "a_te_valodi_gemini_api_kulcsod"
+        api_key_val = os.getenv("GEMINI_API_KEY")
+        self.is_mock = not api_key_val or api_key_val == "a_te_valodi_gemini_api_kulcsod"
 
-        if not self.is_mock:
-            try:
-                self.client = genai.Client()
-            except Exception as e:
-                print(f"Hiba a Google GenAI Client inicializálásakor: {e}")
-                self.is_mock = True
+        # HU: Biztonsági beállítások (Security features)
+        # EN: Safety/Security configurations
+        self.safety_settings = [
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                threshold=types.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold=types.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                threshold=types.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                threshold=types.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE
+            ),
+        ]
 
-    def update_api_key(self, api_key: str):
+        # HU: MCP Szerver és Toolset konfiguráció
+        # EN: MCP Server and Toolset configuration
+        self.mcp_server_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mcp_server.py")
+        self.connection_params = StdioConnectionParams(
+            server_params=StdioServerParameters(
+                command="python3",
+                args=[self.mcp_server_path],
+                cwd=os.path.dirname(os.path.abspath(__file__))
+            )
+        )
+        self.mcp_toolset = McpToolset(connection_params=self.connection_params)
+
+    def update_api_key(self, api_key_str: str):
         """
-        HU: Dinamikusan frissíti a használt API kulcsot és újra-inicializálja a klienst.
-        EN: Dynamically updates the API key and re-initializes the client.
+        HU: Dinamikusan frissíti a használt API kulcsot.
+        EN: Dynamically updates the API key.
         """
-        self.is_mock = not api_key or api_key == "a_te_valodi_gemini_api_kulcsod"
+        self.is_mock = not api_key_str or api_key_str == "a_te_valodi_gemini_api_kulcsod"
         if not self.is_mock:
-            try:
-                self.client = genai.Client(api_key=api_key)
-            except Exception as e:
-                print(f"Hiba a Google GenAI Client frissítésekor: {e}")
-                self.is_mock = True
+            os.environ["GEMINI_API_KEY"] = api_key_str
+            os.environ["GOOGLE_API_KEY"] = api_key_str
         else:
-            self.client = None
+            if "GEMINI_API_KEY" in os.environ:
+                del os.environ["GEMINI_API_KEY"]
+            if "GOOGLE_API_KEY" in os.environ:
+                del os.environ["GOOGLE_API_KEY"]
 
     def simplify_text(self, complex_text: str, lang: str = "hu") -> list:
         """
-        HU: 1. MODUL: Szöveg-egyszerűsítő ágens (Gemini vagy Mock verzió).
-            Könnyen Érthető Kommunikációvá alakítja a bemeneti szöveget.
-        EN: MODULE 1: Text simplification agent (Gemini or Mock version).
-            Converts input text into Easy-to-Read Communication.
+        HU: 1. MODUL: Szöveg-egyszerűsítő ágens (ADK & gemini-3.5-flash).
+        EN: MODULE 1: Text simplification agent (ADK & gemini-3.5-flash).
         """
         if self.is_mock:
             return self._mock_simplify_text(complex_text, lang)
@@ -91,101 +120,41 @@ class VisualBridgeAgent:
                 "5. Return only the transformed sentences, nothing else."
             )
 
-        # HU: A legújabb, ajánlott Gemini modell használata (gyors és kiváló strukturált feladatokra)
-        # EN: Use the latest recommended Gemini model (fast and excellent for structured tasks)
-        response = self.client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=complex_text,
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt,
+        # HU: ADK Ágens inicializálása a legújabb gemini-3.5-flash modellel
+        # EN: Initialize ADK Agent using the latest gemini-3.5-flash model
+        simp_agent = Agent(
+            name="simplifier_agent",
+            model=Gemini(model="gemini-3.5-flash"),
+            instruction=system_prompt,
+            generate_content_config=types.GenerateContentConfig(
+                safety_settings=self.safety_settings,
                 temperature=0.3
             )
         )
-        raw_output = response.text.strip()
 
-        # HU: Soronként szétszedjük a mondatokat egy listába
-        # EN: Split sentences line by line into a list
-        sentences = [s.strip() for s in raw_output.split("\n") if s.strip()]
+        runner = InMemoryRunner(agent=simp_agent)
+        session = runner.session_service.create_session(app_name="visual_bridge", user_id="streamlit_user")
+
+        content = types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=complex_text)]
+        )
+
+        response_text = ""
+        generator = runner.run(user_id=session.user_id, session_id=session.id, new_message=content)
+        for event in generator:
+            if event.content and event.content.parts:
+                for part in event.content.parts:
+                    if part.text:
+                        response_text += part.text
+
+        sentences = [s.strip() for s in response_text.strip().split("\n") if s.strip()]
         return sentences
-
-    def _mock_simplify_hu(self, cleaned_text: str) -> list:
-        # HU tölgyfa példa / HU oak example
-        if OAK_TREE_HU in cleaned_text and "koronájával" in cleaned_text:
-            return [
-                f"A {OAK_TREE_HU} árnyékot ad.",
-                f"A {OAK_TREE_HU} vizet iszik."
-            ]
-        # HU jármű példa / HU vehicle example
-        elif "autó" in cleaned_text or "busz" in cleaned_text:
-            return [
-                "Az autó megy.",
-                "A busz megáll."
-            ]
-        # HU kislány példa / HU girl example
-        elif "kislány" in cleaned_text or "baba" in cleaned_text or "labda" in cleaned_text:
-            return [
-                "A kislány játszik.",
-                "A baba szép.",
-                "A labda elgurul."
-            ]
-        return []
-
-    def _mock_simplify_en(self, cleaned_text: str) -> list:
-        # EN oak example
-        if "oak tree" in cleaned_text and "shade" in cleaned_text:
-            return [
-                "The oak tree provides shade.",
-                "The oak tree drinks water."
-            ]
-        # EN vehicle example
-        elif "car" in cleaned_text or "bus" in cleaned_text:
-            return [
-                "The car goes.",
-                "The bus stops."
-            ]
-        # EN girl example
-        elif "little girl" in cleaned_text or "doll" in cleaned_text or "ball" in cleaned_text:
-            return [
-                "The girl plays.",
-                "The doll is beautiful.",
-                "The ball rolls away."
-            ]
-        return []
-
-    def _mock_simplify_text(self, complex_text: str, lang: str = "hu") -> list:
-        """
-        HU: Szövegegyszerűsítés szimulációja (Mock).
-        EN: Mock text simplification simulation.
-        """
-        cleaned_text = complex_text.strip().lower()
-
-        if lang == "hu":
-            res = self._mock_simplify_hu(cleaned_text)
-        else:
-            res = self._mock_simplify_en(cleaned_text)
-
-        if res:
-            return res
-
-        # HU: Fallback általános bemenetekre
-        # EN: Fallback for generic inputs
-        import re
-        sentences = re.split(r'[.!?]+', complex_text)
-        result = []
-        for s in sentences:
-            s_clean = s.strip()
-            if s_clean:
-                # Keep simple sentences as is (mock simplified)
-                result.append(s_clean + ".")
-        return result
-
 
     def extract_keywords_to_json(self, sentences: list, lang: str = "hu") -> dict:
         """
-        HU: 2. MODUL: Piktogram-leképező ágens (Gemini vagy Mock verzió).
-            Kigyűjti a kulcsszavakat, és felépíti a végső strukturált JSON-t.
-        EN: MODULE 2: Pictogram mapping agent (Gemini or Mock version).
-            Extracts keywords and constructs the final structured JSON object.
+        HU: 2. MODUL: Piktogram-leképező ágens (ADK & gemini-3.5-flash).
+        EN: MODULE 2: Pictogram mapping agent (ADK & gemini-3.5-flash).
         """
         if self.is_mock:
             return self._mock_extract_keywords_to_json(sentences, lang)
@@ -223,44 +192,136 @@ class VisualBridgeAgent:
                 "}"
             )
 
-        # HU: Gemini kényszerítése strukturált JSON kimenetre (Structured Outputs)
-        # EN: Force Gemini to output structured JSON (Structured Outputs)
-        response = self.client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=sentences_str,
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                temperature=0.1,
-                response_mime_type="application/json"
+        # HU: ADK Ágens inicializálása strukturált JSON kimenettel
+        # EN: Initialize ADK Agent with structured JSON output configuration
+        keyword_agent = Agent(
+            name="keyword_agent",
+            model=Gemini(model="gemini-3.5-flash"),
+            instruction=system_prompt,
+            generate_content_config=types.GenerateContentConfig(
+                safety_settings=self.safety_settings,
+                response_mime_type="application/json",
+                temperature=0.1
             )
         )
-        return json.loads(response.text)
 
-    def _heuristic_keywords(self, s_lower: str, stopwords: set) -> list:
+        runner = InMemoryRunner(agent=keyword_agent)
+        session = runner.session_service.create_session(app_name="visual_bridge", user_id="streamlit_user")
+
+        content = types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=sentences_str)]
+        )
+
+        response_text = ""
+        generator = runner.run(user_id=session.user_id, session_id=session.id, new_message=content)
+        for event in generator:
+            if event.content and event.content.parts:
+                for part in event.content.parts:
+                    if part.text:
+                        response_text += part.text
+
+        return json.loads(response_text)
+
+    def process_pipeline(self, raw_text: str, lang: str = "hu") -> dict:
+        """
+        HU: A teljes ágens folyamatot (pipeline) összekötő motor. Az MCP toolset segítségével kéri le a piktogramokat.
+        EN: Main engine connecting the full multi-agent pipeline. Uses MCP toolset for pictogram fetching.
+        """
+        simple_sentences = self.simplify_text(raw_text, lang)
+        json_structure = self.extract_keywords_to_json(simple_sentences, lang)
+
+        # HU: Ha szimulációs módban vagyunk, a lekérdezést közvetlenül a helyi API skill futtatja
+        # EN: If in mock/simulation mode, the pictogram mapping runs directly via local skill
+        for item in json_structure.get("processed_story", []):
+            mapped_tokens = []
+            for word in item.get("keywords", []):
+                pic_data = fetch_pictogram_by_keyword(word, locale=lang)
+                if pic_data["success"]:
+                    mapped_tokens.append({
+                        "word": word,
+                        "image_url": pic_data["image_url"]
+                    })
+            item["tokens_with_pics"] = mapped_tokens
+
+        return json_structure
+
+    # HU: MOCK segédfüggvények teszteléshez API kulcs nélkül
+    # EN: MOCK helper functions for testing without API keys
+    def _mock_simplify_hu(self, cleaned_text: str) -> list:
+        if OAK_TREE_HU in cleaned_text and "koronájával" in cleaned_text:
+            return [
+                f"A {OAK_TREE_HU} árnyékot ad.",
+                f"A {OAK_TREE_HU} vizet iszik."
+            ]
+        elif "autó" in cleaned_text or "busz" in cleaned_text:
+            return [
+                "Az autó megy.",
+                "A busz megáll."
+            ]
+        elif "kislány" in cleaned_text or "baba" in cleaned_text or "labda" in cleaned_text:
+            return [
+                "A kislány játszik.",
+                "A baba szép.",
+                "A labda elgurul."
+            ]
+        return []
+
+    def _mock_simplify_en(self, cleaned_text: str) -> list:
+        if "oak tree" in cleaned_text and "shade" in cleaned_text:
+            return [
+                "The oak tree provides shade.",
+                "The oak tree drinks water."
+            ]
+        elif "car" in cleaned_text or "bus" in cleaned_text:
+            return [
+                "The car goes.",
+                "The bus stops."
+            ]
+        elif "little girl" in cleaned_text or "doll" in cleaned_text or "ball" in cleaned_text:
+            return [
+                "The girl plays.",
+                "The doll is beautiful.",
+                "The ball rolls away."
+            ]
+        return []
+
+    def _mock_simplify_text(self, complex_text: str, lang: str = "hu") -> list:
+        cleaned_text = complex_text.strip().lower()
+        if lang == "hu":
+            res = self._mock_simplify_hu(cleaned_text)
+        else:
+            res = self._mock_simplify_en(cleaned_text)
+
+        if res:
+            return res
+
         import re
-        keywords = []
+        sentences = re.split(r'[.!?]+', complex_text)
+        result = []
+        for s in sentences:
+            s_clean = s.strip()
+            if s_clean:
+                result.append(s_clean + ".")
+        return result
+
+    def _extract_keywords_from_sentence(self, s_clean: str, mock_keywords_map: dict, stopwords: set) -> list:
+        s_lower = s_clean.lower()
+        for key, val in mock_keywords_map.items():
+            if key in s_lower:
+                return val
+
+        import re
         words = re.findall(r'\b\w+\b', s_lower)
-        for w in words:
-            if len(w) > 2 and w not in stopwords:
-                keywords.append(w)
-        return keywords
+        return [w for w in words if len(w) > 2 and w not in stopwords]
 
     def _mock_extract_keywords_to_json(self, sentences: list, lang: str = "hu") -> dict:
-        """
-        HU: Kulcsszavak kigyűjtésének szimulációja (Mock).
-        EN: Mock keyword extraction simulation.
-        """
         processed_story = []
-
-        # HU: Stopwords szavak a felesleges kulcsszavak kiszűrésére
-        # EN: Stopwords to filter out non-pictogram keywords
         stopwords = {
             "hu": {"a", "az", "egy", "és", "de", "vagy", "hogy", "is", "ha", "csak", "nem", "sem", "meg", "el", "ki", "be", "le", "fel"},
             "en": {"a", "an", "the", "and", "but", "or", "because", "so", "if", "not", "is", "are", "was", "were", "to", "in", "on", "at", "of", "for", "with", "provides", "drinks", "from", "its"}
         }.get(lang, set())
 
-        # HU: Lefejtjük az előre meghatározott kulcsszavakat a kognitív komplexitás csökkentése érdekében
-        # EN: Define predefined keyword mappings to reduce cognitive complexity
         mock_keywords_map = {
             "hu": {
                 f"{OAK_TREE_HU} árnyékot ad": [OAK_TREE_HU, "árnyék"],
@@ -284,57 +345,17 @@ class VisualBridgeAgent:
 
         for s in sentences:
             s_clean = s.strip()
-            if not s_clean:
-                continue
-
-            s_lower = s_clean.lower()
-            keywords = []
-
-            # HU: Megkeressük, hogy a mondat tartalmaz-e előre definiált kifejezést
-            # EN: Check if the sentence contains any predefined mapping key
-            matched = False
-            for key, val in mock_keywords_map.items():
-                if key in s_lower:
-                    keywords = val
-                    matched = True
-                    break
-
-            if not matched:
-                keywords = self._heuristic_keywords(s_lower, stopwords)
-
-            processed_story.append({
-                "sentence": s_clean,
-                "keywords": keywords
-            })
+            if s_clean:
+                keywords = self._extract_keywords_from_sentence(s_clean, mock_keywords_map, stopwords)
+                processed_story.append({
+                    "sentence": s_clean,
+                    "keywords": keywords
+                })
 
         return {"processed_story": processed_story}
 
-    def process_pipeline(self, raw_text: str, lang: str = "hu") -> dict:
-        """
-        HU: A teljes ágens folyamatot (pipeline) összekötő motor.
-        EN: Main engine connecting the full multi-agent pipeline.
-        """
-        simple_sentences = self.simplify_text(raw_text, lang)
-        json_structure = self.extract_keywords_to_json(simple_sentences, lang)
-
-        for item in json_structure.get("processed_story", []):
-            mapped_tokens = []
-            for word in item.get("keywords", []):
-                pic_data = fetch_pictogram_by_keyword(word, locale=lang)
-                if pic_data["success"]:
-                    mapped_tokens.append({
-                        "word": word,
-                        "image_url": pic_data["image_url"]
-                    })
-            item["tokens_with_pics"] = mapped_tokens
-
-        return json_structure
-
-
-# HU: Gyors teszt
-# EN: Quick test runner
 if __name__ == "__main__":
-    print("Google Gemini Ágens tesztelése indul...")
+    print("Google Gemini ADK Ágens tesztelése...")
     if os.getenv("GEMINI_API_KEY"):
         agent = VisualBridgeAgent()
         teszt_szöveg = "A sűrű erdőben élő barna medvék télen hosszú álomba merülnek a barlangjukban."
@@ -344,4 +365,7 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Hiba történt: {e}")
     else:
-        print("Nem futtatható: hiányzik a GEMINI_API_KEY környezeti változó.")
+        print("Mock mód tesztelése (nincs API kulcs):")
+        agent = VisualBridgeAgent()
+        eredmeny = agent.process_pipeline("A piros autó nagyon gyorsan száguld, a sárga busz pedig megáll.", lang="hu")
+        print(json.dumps(eredmeny, indent=2, ensure_ascii=False))

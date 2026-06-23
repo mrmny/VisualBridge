@@ -47,6 +47,42 @@ def _(text):
     return st.session_state.trans_mgr.gettext(text)
 
 
+# HU: Segédfüggvény a kép MIME típusának meghatározásához kiterjesztés alapján
+# EN: Helper function to determine the image MIME type based on extension
+def get_image_mime_type(ext):
+    if ext == ".svg":
+        return "image/svg+xml"
+    elif ext in [".png", ".jpg", ".jpeg", ".webp"]:
+        return f"image/{ext[1:]}"
+    else:
+        return "image"
+
+
+# HU: Helyi képek beágyazása base64 formátumban a markdown tartalomban
+# EN: Embed local images as base64 data URIs in markdown content
+def embed_local_images(content):
+    import base64
+    import re
+    pattern = r'!\[([^\]]*)\]\((assets/[^\)]+)\)'
+
+    def replace_match(match):
+        alt_text = match.group(1)
+        relative_path = match.group(2)
+        full_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
+        if os.path.exists(full_path):
+            try:
+                with open(full_path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                ext = os.path.splitext(relative_path)[1].lower()
+                mime = get_image_mime_type(ext)
+                return f"![{alt_text}](data:{mime};base64,{encoded_string})"
+            except Exception:
+                pass
+        return match.group(0)
+
+    return re.sub(pattern, replace_match, content)
+
+
 @st.dialog("VisualBridge", width="large")
 def show_readme_dialog(lang):
     st.subheader(_("📖 Használati útmutató & Rendszerleírás"))
@@ -55,26 +91,7 @@ def show_readme_dialog(lang):
         with open(readme_file, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # HU: Helyi képek beágyazása base64 formátumban a helyes megjelenítéshez
-        # EN: Embed local images as base64 data URIs for proper rendering in Streamlit
-        import base64
-        import re
-        pattern = r'!\[([^\]]*)\]\((assets/[^\)]+)\)'
-        def replace_match(match):
-            alt_text = match.group(1)
-            relative_path = match.group(2)
-            full_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
-            if os.path.exists(full_path):
-                try:
-                    with open(full_path, "rb") as image_file:
-                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                    ext = os.path.splitext(relative_path)[1].lower()
-                    mime = "image/svg+xml" if ext == ".svg" else f"image/{ext[1:]}" if ext in [".png", ".jpg", ".jpeg", ".webp"] else "image"
-                    return f"![{alt_text}](data:{mime};base64,{encoded_string})"
-                except Exception:
-                    pass
-            return match.group(0)
-        content = re.sub(pattern, replace_match, content)
+        content = embed_local_images(content)
 
         with st.container(height=650, key="readme_container"):
             st.markdown(content)
@@ -106,9 +123,9 @@ if st.session_state.current_lang != lang_code:
 # EN: API key settings in the sidebar (especially useful for user-provided keys)
 base_title = _("API kulcs beállításai")
 if st.session_state.user_api_key.strip():
-    if st.session_state.api_key_valid == True:
+    if st.session_state.api_key_valid:
         expander_title = f"🟢 🔑 {base_title}"
-    elif st.session_state.api_key_valid == False:
+    elif st.session_state.api_key_valid is not None:
         expander_title = f"🔴 🔑 {base_title}"
     else:
         expander_title = f"🟡 🔑 {base_title}"
@@ -577,23 +594,102 @@ with col2:
             """
             components.html(card_html, height=95)
 
-            # HU: Kirakjuk egymás mellé a mondathoz tartozó piktogramokat
-            # EN: Place pictograms side-by-side below the sentence
+            # HU: Kirakjuk egymás mellé a mondathoz tartozó piktogramokat hangfelolvasással
+            # EN: Place pictograms side-by-side below the sentence with click-to-speak
             tokens = item.get("tokens_with_pics", [])
             if tokens:
-                # HU: Dinamikus oszlopok a képeknek a mondaton belül
-                # EN: Dynamic columns for images inside the sentence
-                img_cols = st.columns(len(tokens))
+                speech_lang = "hu-HU" if lang_code == "hu" else "en-US"
+                bootstrap_tag = f"<style>{bootstrap_css}</style>" if 'bootstrap_css' in globals() else ""
+
+                pics_html = f"""
+                {bootstrap_tag}
+                <style>
+                    body {{
+                        margin: 0;
+                        padding: 10px 4px;
+                        background: transparent;
+                        overflow: hidden;
+                    }}
+                    .pic-card {{
+                        background-color: #e2e8f0 !important;
+                        border: 2px solid rgba(128, 128, 128, 0.15) !important;
+                        border-radius: 16px !important;
+                        padding: 12px !important;
+                        text-align: center !important;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+                        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+                        margin-bottom: 12px;
+                        cursor: pointer;
+                        display: inline-block;
+                        width: 130px;
+                    }}
+                    .pic-card:hover {{
+                        transform: translateY(-6px) scale(1.03) !important;
+                        box-shadow: 0 10px 20px -3px rgba(59, 130, 246, 0.15) !important;
+                        border-color: #3b82f6 !important;
+                    }}
+                    .pic-label {{
+                        font-family: 'Inter', sans-serif;
+                        font-size: 13px;
+                        font-weight: bold;
+                        text-align: center;
+                        text-transform: uppercase;
+                        color: #1e293b !important;
+                        opacity: 0.9;
+                        margin-top: 8px;
+                        word-wrap: break-word;
+                    }}
+                    .pics-container {{
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 15px;
+                        justify-content: flex-start;
+                    }}
+                </style>
+                <div class="pics-container">
+                """
                 for idx, token in enumerate(tokens):
-                    with img_cols[idx]:
-                        # HU: Megjelenítjük a piktogram kártyát lebegő stílussal
-                        # EN: Render the pictogram card with hover styling
-                        st.markdown(f"""
-                        <div class="pic-card">
-                            <img src="{token['image_url']}" style="width: 100px; height: 100px; object-fit: contain; margin-bottom: 8px;" />
-                            <div class="pic-label">{token['word'].upper()}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                    word_escaped = token['word'].replace("'", "\\'")
+                    pics_html += f"""
+                    <div class="pic-card" onclick="speakWord('{word_escaped}')" title="{_('🔊 Felolvasás')}">
+                        <img src="{token['image_url']}" style="width: 100px; height: 100px; object-fit: contain;" />
+                        <div class="pic-label">{token['word'].upper()}</div>
+                    </div>
+                    """
+                pics_html += f"""
+                </div>
+                <script>
+                    function speakWord(word) {{
+                        window.speechSynthesis.cancel();
+                        var utterance = new SpeechSynthesisUtterance(word);
+                        utterance.lang = '{speech_lang}';
+
+                        var voices = window.speechSynthesis.getVoices();
+                        var matchingVoice = null;
+                        for (var i = 0; i < voices.length; i++) {{
+                            if (voices[i].lang.toLowerCase() === utterance.lang.toLowerCase()) {{
+                                matchingVoice = voices[i];
+                                break;
+                            }}
+                        }}
+                        if (!matchingVoice) {{
+                            var prefix = utterance.lang.split('-')[0].toLowerCase();
+                            for (var i = 0; i < voices.length; i++) {{
+                                if (voices[i].lang.toLowerCase().startsWith(prefix)) {{
+                                    matchingVoice = voices[i];
+                                    break;
+                                }}
+                            }}
+                        }}
+                        if (matchingVoice) {{
+                            utterance.voice = matchingVoice;
+                        }}
+                        window.speechSynthesis.speak(utterance);
+                    }}
+                </script>
+                """
+                height = 185 if len(tokens) <= 4 else 360
+                components.html(pics_html, height=height)
             st.write("---")
 
         # HU: ---------------- INTERAKTÍV KVÍZ SZAKASZ ----------------
@@ -611,11 +707,73 @@ with col2:
         quiz_cols = st.columns(3)
         for idx, option in enumerate(quiz_data["options"]):
             with quiz_cols[idx]:
-                st.markdown(f"""
-                <div class="pic-card" style="margin-bottom: 15px;">
+                speech_lang = "hu-HU" if lang_code == "hu" else "en-US"
+                bootstrap_tag = f"<style>{bootstrap_css}</style>" if 'bootstrap_css' in globals() else ""
+                word_escaped = option['word'].replace("'", "\\'")
+
+                quiz_card_html = f"""
+                {bootstrap_tag}
+                <style>
+                    body {{
+                        margin: 0;
+                        padding: 4px;
+                        background: transparent;
+                        overflow: hidden;
+                    }}
+                    .pic-card {{
+                        background-color: #e2e8f0 !important;
+                        border: 2px solid rgba(128, 128, 128, 0.15) !important;
+                        border-radius: 16px !important;
+                        padding: 12px !important;
+                        text-align: center !important;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+                        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+                        cursor: pointer;
+                        height: 148px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }}
+                    .pic-card:hover {{
+                        transform: translateY(-4px) scale(1.02) !important;
+                        box-shadow: 0 10px 20px -3px rgba(59, 130, 246, 0.15) !important;
+                        border-color: #3b82f6 !important;
+                    }}
+                </style>
+                <div class="pic-card" onclick="speakWord('{word_escaped}')" title="{_('🔊 Felolvasás')}">
                     <img src="{option['url']}" style="width: 120px; height: 120px; object-fit: contain;" />
                 </div>
-                """, unsafe_allow_html=True)
+                <script>
+                    function speakWord(word) {{
+                        window.speechSynthesis.cancel();
+                        var utterance = new SpeechSynthesisUtterance(word);
+                        utterance.lang = '{speech_lang}';
+                        var voices = window.speechSynthesis.getVoices();
+                        var matchingVoice = null;
+                        for (var i = 0; i < voices.length; i++) {{
+                            if (voices[i].lang.toLowerCase() === utterance.lang.toLowerCase()) {{
+                                matchingVoice = voices[i];
+                                break;
+                            }}
+                        }}
+                        if (!matchingVoice) {{
+                            var prefix = utterance.lang.split('-')[0].toLowerCase();
+                            for (var i = 0; i < voices.length; i++) {{
+                                if (voices[i].lang.toLowerCase().startsWith(prefix)) {{
+                                    matchingVoice = voices[i];
+                                    break;
+                                }}
+                            }}
+                        }}
+                        if (matchingVoice) {{
+                            utterance.voice = matchingVoice;
+                        }}
+                        window.speechSynthesis.speak(utterance);
+                    }}
+                </script>
+                """
+                components.html(quiz_card_html, height=160)
+
                 # HU: Ha a gyermek rákattint a gombra (a gomb felirata fordított)
                 # EN: Triggered when child clicks answer button (translated label)
                 btn_label = _("Ez a(z) {word}").format(word=option['word'])
