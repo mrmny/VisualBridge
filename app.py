@@ -27,22 +27,132 @@ if "result" not in st.session_state:
 if "current_lang" not in st.session_state:
     st.session_state.current_lang = "hu"
 
+# HU: Biztosítjuk, hogy a trans_mgr nyelve szinkronban legyen
+# EN: Ensure the trans_mgr language is in sync
+st.session_state.trans_mgr.set_language(st.session_state.current_lang)
 
-# HU: Nyelvválasztó a beállításokhoz
-# EN: Language selector for settings
-selected_lang_label = st.sidebar.selectbox("Language / Nyelv", ["Magyar", "English"])
-lang_code = "hu" if selected_lang_label == "Magyar" else "en"
-st.session_state.trans_mgr.set_language(lang_code)
+if "user_api_key" not in st.session_state:
+    st.session_state.user_api_key = ""
 
-if st.session_state.current_lang != lang_code:
-    st.session_state.current_lang = lang_code
-    st.session_state.result = None
+if "key_expiry_time" not in st.session_state:
+    st.session_state.key_expiry_time = 0.0
+
+if "api_key_valid" not in st.session_state:
+    st.session_state.api_key_valid = None
 
 
 # HU: Fordítási segédfüggvény
 # EN: Translation helper function
 def _(text):
     return st.session_state.trans_mgr.gettext(text)
+
+
+@st.dialog("VisualBridge", width="large")
+def show_readme_dialog(lang):
+    st.subheader(_("📖 Használati útmutató & Rendszerleírás"))
+    readme_file = f"README_{lang}.md"
+    if os.path.exists(readme_file):
+        with open(readme_file, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # HU: Helyi képek beágyazása base64 formátumban a helyes megjelenítéshez
+        # EN: Embed local images as base64 data URIs for proper rendering in Streamlit
+        import base64
+        import re
+        pattern = r'!\[([^\]]*)\]\((assets/[^\)]+)\)'
+        def replace_match(match):
+            alt_text = match.group(1)
+            relative_path = match.group(2)
+            full_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
+            if os.path.exists(full_path):
+                try:
+                    with open(full_path, "rb") as image_file:
+                        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                    ext = os.path.splitext(relative_path)[1].lower()
+                    mime = "image/svg+xml" if ext == ".svg" else f"image/{ext[1:]}" if ext in [".png", ".jpg", ".jpeg", ".webp"] else "image"
+                    return f"![{alt_text}](data:{mime};base64,{encoded_string})"
+                except Exception:
+                    pass
+            return match.group(0)
+        content = re.sub(pattern, replace_match, content)
+
+        with st.container(height=650, key="readme_container"):
+            st.markdown(content)
+    else:
+        st.error(f"File {readme_file} not found.")
+
+
+# HU: "Olvass el" gomb a használati útmutató megnyitásához a nyelvválasztás felett
+# EN: "Read me" button to open the user guide above the language selector
+if st.sidebar.button(_("📖 Használati útmutató / Olvass el"), key="btn_readme_dialog", use_container_width=True):
+    show_readme_dialog(st.session_state.current_lang)
+
+
+# HU: Nyelvválasztó a beállításokhoz
+# EN: Language selector for settings
+lang_options = ["Magyar", "English"]
+default_idx = 0 if st.session_state.current_lang == "hu" else 1
+selected_lang_label = st.sidebar.selectbox("Language / Nyelv", lang_options, index=default_idx)
+lang_code = "hu" if selected_lang_label == "Magyar" else "en"
+
+if st.session_state.current_lang != lang_code:
+    st.session_state.current_lang = lang_code
+    st.session_state.trans_mgr.set_language(lang_code)
+    st.session_state.result = None
+    st.rerun()
+
+
+# HU: API kulcs beállítások az oldalsávban (különösen hasznos saját kulcs megadásakor)
+# EN: API key settings in the sidebar (especially useful for user-provided keys)
+base_title = _("API kulcs beállításai")
+if st.session_state.user_api_key.strip():
+    if st.session_state.api_key_valid == True:
+        expander_title = f"🟢 🔑 {base_title}"
+    elif st.session_state.api_key_valid == False:
+        expander_title = f"🔴 🔑 {base_title}"
+    else:
+        expander_title = f"🟡 🔑 {base_title}"
+else:
+    expander_title = f"🔑 {base_title}"
+
+with st.sidebar.expander(expander_title):
+    st.write(_("Adja meg saját Gemini API kulcsát a teljes értékű mesterséges intelligencia (szöveg-egyszerűsítés és piktogram-leképezés) használatához. A kulcs kizárólag a böngésző munkamenet memóriájában tárolódik."))
+
+    user_api_key_input = st.text_input(
+        _("Gemini API kulcs:"),
+        type="password",
+        value=st.session_state.user_api_key,
+        key="temp_api_key_input"
+    )
+
+    if user_api_key_input != st.session_state.user_api_key:
+        st.session_state.user_api_key = user_api_key_input
+        st.session_state.api_key_valid = None  # Reset key validation status
+        if user_api_key_input.strip():
+            import time
+            st.session_state.key_expiry_time = time.time() * 1000 + 30 * 60 * 1000
+            if "agent" not in st.session_state:
+                st.session_state.agent = VisualBridgeAgent()
+            st.session_state.agent.update_api_key(user_api_key_input)
+        else:
+            st.session_state.key_expiry_time = 0.0
+            if "agent" in st.session_state:
+                st.session_state.agent.update_api_key("")
+        st.rerun()
+
+    # HU: Vizuális kulcs-státusz kijelzése
+    # EN: Visual key status indicator
+    if st.session_state.user_api_key.strip():
+        if st.session_state.key_expiry_time > 0.0:
+            import time
+            remaining_mins = max(0.0, (st.session_state.key_expiry_time - time.time() * 1000) / 60000.0)
+            st.success(_("Saját kulcs aktív (hátralévő idő: {mins:.1f} perc).").format(mins=remaining_mins))
+        else:
+            st.success(_("Saját kulcs aktív."))
+    elif os.getenv("GEMINI_API_KEY") and os.getenv("GEMINI_API_KEY") != "a_te_valodi_gemini_api_kulcsod":
+        st.info(_("Rendszer alapértelmezett kulcs aktív."))
+    else:
+        st.warning(_("Szimulációs (Mock) mód aktív."))
 
 # HU: Premium vizuális stílusok és Bootstrap beillesztése
 # EN: Premium visual styles and Bootstrap stylesheet injection
@@ -54,6 +164,28 @@ if os.path.exists(bootstrap_path):
 
 st.markdown("""
 <style>
+    /* HU: Munkamenet hosszabbító rejtett gombok és konténereik elrejtése */
+    /* EN: Hide session extension hidden buttons and their containers */
+    div.st-key-btn_expire,
+    div.st-key-btn_extend_5,
+    div.st-key-btn_extend_10,
+    div.st-key-btn_extend_15,
+    div.st-key-btn_extend_30,
+    .st-key-btn_expire,
+    .st-key-btn_extend_5,
+    .st-key-btn_extend_10,
+    .st-key-btn_extend_15,
+    .st-key-btn_extend_30 {
+        display: none !important;
+    }
+
+    /* HU: README modal görgetősáv és méret korlátozás */
+    /* EN: README modal scrollbar and size constraint */
+    div.st-key-readme_container {
+        max-height: 65vh !important;
+        height: auto !important;
+    }
+
     /* HU: Bootstrap testreszabása, hogy ne írja felül a Streamlit hátterét és színeit */
     /* EN: Prevent Bootstrap from overriding Streamlit's base layout backgrounds and colors */
     body {
@@ -351,7 +483,11 @@ with col2:
                 # HU: Futtatjuk a teljes ágens folyamatot (Pipeline) a kiválasztott nyelven
                 # EN: Run the full agent pipeline in the selected language
                 st.session_state.result = st.session_state.agent.process_pipeline(user_input, lang=lang_code)
+                if st.session_state.user_api_key.strip():
+                    st.session_state.api_key_valid = True
             except Exception as e:
+                if st.session_state.user_api_key.strip():
+                    st.session_state.api_key_valid = False
                 error_msg = _("Hiba történt a feldolgozás során: {e}").format(e=e)
                 st.error(error_msg)
                 st.info(_("Kérjük, ellenőrizze, hogy az API kulcsa érvényes-e és van-e internetkapcsolat."))
@@ -491,3 +627,304 @@ with col2:
                         st.error(_("❌ Próbáld meg még egyszer! ❌"))
     else:
         st.info(_("Kattints a bal oldalon a 'Vizuális anyag generálása' gombra a kezdéshez."))
+
+
+# ==============================================================================
+# HU: Munkamenet időzítő és lejárati események (JS alapú modal overlay és rejtett gombok)
+# EN: Session timer and expiration events (JS-based modal overlay and hidden buttons)
+# ==============================================================================
+
+# HU: Rejtett gombok a JavaScript események fogadásához (CSS segítségével elrejtve a DOM-ban)
+# EN: Hidden buttons to capture JavaScript events (hidden in DOM using CSS)
+
+if st.button("session_expire_trigger", key="btn_expire"):
+    st.session_state.user_api_key = ""
+    st.session_state.key_expiry_time = 0.0
+    if "agent" in st.session_state:
+        st.session_state.agent.update_api_key("")
+    st.rerun()
+
+if st.button("extend_5_trigger", key="btn_extend_5"):
+    import time
+    st.session_state.key_expiry_time = max(time.time() * 1000, st.session_state.key_expiry_time) + 5 * 60 * 1000
+    st.rerun()
+
+if st.button("extend_10_trigger", key="btn_extend_10"):
+    import time
+    st.session_state.key_expiry_time = max(time.time() * 1000, st.session_state.key_expiry_time) + 10 * 60 * 1000
+    st.rerun()
+
+if st.button("extend_15_trigger", key="btn_extend_15"):
+    import time
+    st.session_state.key_expiry_time = max(time.time() * 1000, st.session_state.key_expiry_time) + 15 * 60 * 1000
+    st.rerun()
+
+if st.button("extend_30_trigger", key="btn_extend_30"):
+    import time
+    st.session_state.key_expiry_time = max(time.time() * 1000, st.session_state.key_expiry_time) + 30 * 60 * 1000
+    st.rerun()
+
+# HU: Csak akkor ágyazzuk be a JS-t, ha van érvényes lejárati idő a sessionben
+# EN: Embed the JS component only if there is a valid expiry time in the session
+expiry_time = st.session_state.get("key_expiry_time", 0.0)
+
+if expiry_time > 0.0:
+    modal_title = _("Munkamenet meghosszabbítása")
+    modal_desc = _("Az API kulcs munkamenete hamarosan lejár. Szeretné meghosszabbítani?")
+    dismiss_txt = _("Elutasítás és bezárás")
+    time_left_txt = _("Hátralévő idő: ") if lang_code == "hu" else "Time left: "
+
+    js_code = f"""
+    <style>
+        .modal-backdrop {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Outfit', 'Inter', sans-serif;
+            animation: fadeIn 0.3s ease-out;
+        }}
+        .modal-box {{
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            width: 90%;
+            max-width: 450px;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            transform: scale(0.9);
+            animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }}
+        @media (prefers-color-scheme: dark) {{
+            .modal-box {{
+                background: #1e293b;
+                color: #f8fafc;
+                border-color: rgba(51, 65, 85, 0.8);
+            }}
+        }}
+        .modal-title {{
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }}
+        @media (prefers-color-scheme: dark) {{
+            .modal-title {{
+                color: #f8fafc;
+            }}
+        }}
+        .modal-desc {{
+            font-size: 1rem;
+            color: #475569;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }}
+        @media (prefers-color-scheme: dark) {{
+            .modal-desc {{
+                color: #cbd5e1;
+            }}
+        }}
+        .timer-badge {{
+            background: #fee2e2;
+            color: #ef4444;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            display: inline-block;
+            margin-bottom: 20px;
+            border: 1px solid #fca5a5;
+            animation: pulse 1s infinite;
+        }}
+        @media (prefers-color-scheme: dark) {{
+            .timer-badge {{
+                background: rgba(239, 68, 68, 0.2);
+                color: #fca5a5;
+                border-color: rgba(239, 68, 68, 0.4);
+            }}
+        }}
+        .btn-grid {{
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }}
+        .btn-opt {{
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }}
+        .btn-opt:hover {{
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }}
+        @media (prefers-color-scheme: dark) {{
+            .btn-opt {{
+                background: #334155;
+                color: #f1f5f9;
+                border-color: #475569;
+            }}
+            .btn-opt:hover {{
+                background: #475569;
+            }}
+        }}
+        .btn-primary-action {{
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+            color: white !important;
+            border: none !important;
+        }}
+        .btn-primary-action:hover {{
+            filter: brightness(1.1);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }}
+        .btn-dismiss {{
+            background: transparent;
+            color: #64748b;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 10px;
+            display: inline-block;
+        }}
+        .btn-dismiss:hover {{
+            color: #475569;
+        }}
+        @media (prefers-color-scheme: dark) {{
+            .btn-dismiss {{
+                color: #94a3b8;
+            }}
+            .btn-dismiss:hover {{
+                color: #cbd5e1;
+            }}
+        }}
+        @keyframes fadeIn {{
+            from {{ opacity: 0; }}
+            to {{ opacity: 1; }}
+        }}
+        @keyframes scaleIn {{
+            from {{ transform: scale(0.9); opacity: 0; }}
+            to {{ transform: scale(1); opacity: 1; }}
+        }}
+        @keyframes pulse {{
+            0%, 100% {{ transform: scale(1); }}
+            50% {{ transform: scale(1.05); }}
+        }}
+    </style>
+    <div id="modal" class="modal-backdrop" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-title">🔑 {modal_title}</div>
+            <div class="modal-desc">{modal_desc}</div>
+            <div id="timer-badge" class="timer-badge">00:60</div>
+            <div class="btn-grid">
+                <button class="btn-opt btn-primary-action" onclick="extend(5)">+5 Min</button>
+                <button class="btn-opt btn-primary-action" onclick="extend(10)">+10 Min</button>
+                <button class="btn-opt btn-primary-action" onclick="extend(15)">+15 Min</button>
+                <button class="btn-opt btn-primary-action" onclick="extend(30)">+30 Min</button>
+            </div>
+            <button class="btn-dismiss" onclick="dismiss()">{dismiss_txt}</button>
+        </div>
+    </div>
+
+    <script>
+    const expiryTime = {expiry_time};
+    const timeLeftTxt = "{time_left_txt}";
+
+    function setIframeActive(active) {{
+        const frame = window.frameElement;
+        if (!frame) return;
+        if (active) {{
+            frame.style.position = 'fixed';
+            frame.style.top = '0';
+            frame.style.left = '0';
+            frame.style.width = '100vw';
+            frame.style.height = '100vh';
+            frame.style.zIndex = '999999';
+            frame.style.border = 'none';
+            frame.style.background = 'transparent';
+        }} else {{
+            frame.style.position = 'absolute';
+            frame.style.width = '0';
+            frame.style.height = '0';
+            frame.style.border = 'none';
+        }}
+    }}
+
+    setIframeActive(false);
+
+    if (expiryTime > 0) {{
+        const dismissedExpiry = sessionStorage.getItem('dismissed_expiry');
+        let isDismissed = (dismissedExpiry === String(expiryTime));
+
+        const interval = setInterval(() => {{
+            const now = Date.now();
+            const timeLeft = expiryTime - now;
+
+            if (timeLeft <= 0) {{
+                clearInterval(interval);
+                setIframeActive(false);
+                triggerParentButton('session_expire_trigger');
+                return;
+            }}
+
+            if (timeLeft <= 60000 && !isDismissed) {{
+                setIframeActive(true);
+                document.getElementById('modal').style.display = 'flex';
+
+                const secondsLeft = Math.ceil(timeLeft / 1000);
+                document.getElementById('timer-badge').innerText = timeLeftTxt + secondsLeft + 's';
+            }} else {{
+                document.getElementById('modal').style.display = 'none';
+                setIframeActive(false);
+            }}
+        }}, 1000);
+    }}
+
+    function extend(minutes) {{
+        setIframeActive(false);
+        document.getElementById('modal').style.display = 'none';
+        triggerParentButton('extend_' + minutes + '_trigger');
+    }}
+
+    function dismiss() {{
+        setIframeActive(false);
+        document.getElementById('modal').style.display = 'none';
+        if (expiryTime > 0) {{
+            sessionStorage.setItem('dismissed_expiry', String(expiryTime));
+        }}
+    }}
+
+    function triggerParentButton(btnText) {{
+        try {{
+            const buttons = window.parent.document.querySelectorAll("button");
+            for (const btn of buttons) {{
+                if (btn.innerText.trim() === btnText) {{
+                    btn.click();
+                    break;
+                }}
+            }}
+        }} catch (e) {{
+            console.error("Error triggering parent button:", e);
+        }}
+    }}
+    </script>
+    """
+    components.html(js_code, height=0, width=0)

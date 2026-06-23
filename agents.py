@@ -43,6 +43,21 @@ class VisualBridgeAgent:
                 print(f"Hiba a Google GenAI Client inicializálásakor: {e}")
                 self.is_mock = True
 
+    def update_api_key(self, api_key: str):
+        """
+        HU: Dinamikusan frissíti a használt API kulcsot és újra-inicializálja a klienst.
+        EN: Dynamically updates the API key and re-initializes the client.
+        """
+        self.is_mock = not api_key or api_key == "a_te_valodi_gemini_api_kulcsod"
+        if not self.is_mock:
+            try:
+                self.client = genai.Client(api_key=api_key)
+            except Exception as e:
+                print(f"Hiba a Google GenAI Client frissítésekor: {e}")
+                self.is_mock = True
+        else:
+            self.client = None
+
     def simplify_text(self, complex_text: str, lang: str = "hu") -> list:
         """
         HU: 1. MODUL: Szöveg-egyszerűsítő ágens (Gemini vagy Mock verzió).

@@ -97,5 +97,32 @@ msgstr "Boy (Car / Bus)"
 msgid "Lány (Baba / Labda)"
 msgstr "Girl (Doll / Ball)"
 
+msgid "API kulcs beállításai"
+msgstr "API Key Settings"
+
+msgid "Adja meg saját Gemini API kulcsát a teljes értékű mesterséges intelligencia (szöveg-egyszerűsítés és piktogram-leképezés) használatához. A kulcs kizárólag a böngésző munkamenet memóriájában tárolódik."
+msgstr "Provide your own Gemini API key to use the full AI features (text simplification and pictogram mapping). The key is stored only in the browser's session memory."
+
+msgid "📖 Használati útmutató / Olvass el"
+msgstr "📖 User Guide / Read Me"
+
+msgid "Gemini API kulcs:"
+msgstr "Gemini API Key:"
+
+msgid "Saját kulcs aktív (hátralévő idő: {mins:.1f} perc)."
+msgstr "Custom key active (remaining time: {mins:.1f} mins)."
+
+msgid "Saját kulcs aktív."
+msgstr "Custom key active."
+
+msgid "Rendszer alapértelmezett kulcs aktív."
+msgstr "System default key active."
+
+msgid "Szimulációs (Mock) mód aktív."
+msgstr "Simulation (Mock) mode active."
+
+msgid "📖 Használati útmutató & Rendszerleírás"
+msgstr "📖 User Guide & System Description"
+
 
 
