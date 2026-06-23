@@ -8,15 +8,14 @@ A **VisualBridge** egy vizuális akadálymentesítő alkalmazás, amely támogat
 
 ## Fő Funkciók
 
-1. **Szöveg-egyszerűsítő ágens (Gemini-alapú)**: A `gemini-3.5-flash` modellt használja a hivatalos `google-genai` SDK-n keresztül a bonyolult szövegek egyszerű, időrendi és aktív szerkezetű tőmondatokká (könnyen érthető szabályok) alakítására.
-2. **Piktogram-leképező ágens**: Kigyűjti a vizuálisan megjeleníthető kulcsszavakat (főneveket, igéket, tulajdonságokat) az egyszerűsített szögből, és párosítja azokat az ARASAAC könyvtár megfelelő szimbólumaival.
-3. **ARASAAC API integráció és gyorsítótár (Caching)**: Közvetlen REST API kapcsolat a nemzetközi ARASAAC adatbázissal, kiegészítve egy helyi JSON cache (`arasaac_cache.json`) fájllal a hálózati terhelés minimalizálása és a gyorsabb betöltés érdekében.
-4. **Interaktív szövegértési kvízek**: Vizuális kvízkérdéseket generál a megadott szavakból (1 helyes válasz piktogrammal, 2 tévesztő opció) a megértés ellenőrzésére. A sikeres választ látványos lufis animáció ünnepli.
-5. **Beépített hangfelolvasó (TTS)**: "Felolvasás" gombok a mondatok mellett, amelyek a böngésző natív hangszintetizátorát (SpeechSynthesis) használják magyar és angol nyelven.  
-  5.1. A magyar nyelvű kiejtés sajnos nem a legideálisabb a böngészőben, ezért bővítettem a funkciót azzal, hogy a jobb oldalon a piktogramokat is fel tudja olvasni.
-6. **Kétnyelvű lokalizáció (i18n)**: Teljesen kétnyelvű (magyar és angol) felület, amelyet dinamikusan kezel a `langs/` könyvtárban található `.po` fordítási katalógusok segítségével.
-7. **Prémium felhasználói felület**: Streamlit alapú reszponzív felület egyedi Bootstrap CSS-sel, gyerekbarát elrendezésekkel, animált gombokkal és lebegő piktogram kártyákkal.
-8. **Szimulációs (Mock) üzemmód**: Gemini API kulcs nélkül is azonnal működik előre definiált sablonok segítségével, így ideális a tesztelésre és a kipróbálásra.
+1. **Szöveg-egyszerűsítő ágens (ADK-alapú)**: A Google Agent Development Kit (ADK) keretrendszert és a legújabb `gemini-3.5-flash` modellt használja az összetett mondatok egyszerű, időrendi tőmondatokká (könnyen érthető kommunikáció) alakítására.
+2. **MCP Szerver integráció**: Helyi Model Context Protocol (MCP) szervert tartalmaz a képességek (piktogram leképezés, kvíz generálás) szabványos kiszolgálására.
+3. **Beépített biztonsági szűrők (Security)**: A tartalom szűrése és a biztonsági beállítások közvetlenül az ADK ágens szintjén vannak konfigurálva.
+4. **Ágens CLI**: Parancssori felület (`cli.py`) az ágens gyors és önálló terminál alapú tesztelésére és futtatására.
+5. **ARASAAC API és Cache**: Közvetlen kapcsolat az ARASAAC szimbólumtárral, kiegészítve helyi JSON gyorsítótárral a hálózati terhelés csökkentésére.
+6. **Interaktív szövegértési kvízek**: Vizuális kvízkérdéseket generál a megértés ellenőrzésére.
+7. **Beépített hangfelolvasó (TTS)**: A böngésző natív hangszintetizátorát használja mindkét nyelven.
+8. **Kétnyelvű lokalizáció (i18n)**: Teljesen kétnyelvű felület (magyar és angol), `.po` fájlok segítségével.
 
 ---
 
@@ -25,18 +24,29 @@ A **VisualBridge** egy vizuális akadálymentesítő alkalmazás, amely támogat
 ```mermaid
 graph TD
     User[Pedagógus / Szülő] -->|Szöveg bevitele & Kvíz beállítás| App[Streamlit felület - app.py]
+    CLI[Ágens CLI - cli.py] -->|CLI bemenet| Agent[VisualBridge Ágens - agents.py]
     App -->|Dinamikus nyelvválasztás| Trans[Fordításkezelő - i18n.py]
-    App -->|Nyers szöveg| Agent[VisualBridge Ágens - agents.py]
-    Agent -->|1. simplify_text| GeminiSimp[Gemini 3.5 Flash / Mock]
-    GeminiSimp -->|Egyszerűsített mondatok| Agent
-    Agent -->|2. extract_keywords| GeminiMap[Gemini 3.5 Flash / Mock]
-    GeminiMap -->|Kulcsszavak JSON| Agent
-    Agent -->|3. fetch_pictogram_by_keyword| Skills[Ágens képességek - skills.py]
+    App -->|Nyers szöveg| Agent
+
+    subgraph Google Agent Development Kit ADK
+        Agent -->|1. simplify_text| GeminiSimp[Gemini 3.5 Flash + Biztonság]
+        GeminiSimp -->|Egyszerűsített mondatok| Agent
+        Agent -->|2. extract_keywords| GeminiMap[Gemini 3.5 Flash + Biztonság]
+        GeminiMap -->|Kulcsszavak JSON| Agent
+    end
+
+    subgraph Model Context Protocol MCP
+        Agent -->|3. fetch_pictogram MCP Eszköz| MCPServer[MCP Szerver - mcp_server.py]
+        MCPServer -->|Lekérés| Skills[Ágens képességek - skills.py]
+    end
+
     Skills -->|Keresés| Cache{arasaac_cache.json}
     Cache -->|Gyorsítótár hiba| API[ARASAAC REST API]
     API -->|Mentés| Cache
-    Skills -->|Piktogram URL-ek| Agent
+    Skills -->|Piktogram URL-ek| MCPServer
+    MCPServer -->|Eszköz válasz| Agent
     Agent -->|Strukturált vizuális eredmény| App
+    Agent -->|CLI kimenet| CLI
     App -->|Mondat + TTS + Piktogramok| Child[Gyermek felület]
     App -->|Kvíz beállítások| Skills
     Skills -->|Kvíz válaszlehetőségek| Child
@@ -44,8 +54,10 @@ graph TD
 
 A projekt fájlstruktúrája és szerepkörei:
 
-- **`app.py`**: A fő Streamlit modul. Kezeli a felület felosztását (bal oldal: pedagógus / szülő felület, jobb oldal: gyermekfelület) és a prémium CSS dizájn beillesztését.
-- **`agents.py`**: Az ágensek koordinátora. Kezeli a Gemini API-val való kommunikációt vagy a mock szimulációt.
+- **`app.py`**: A fő Streamlit modul. Kezeli a felület felosztását (bal/jobb oldal) és a CSS dizájn beillesztését.
+- **`agents.py`**: ADK-alapú koordinátor ágens, amely kezeli a Gemini API-val (gemini-3.5-flash) való kommunikációt biztonsági beállításokkal.
+- **`mcp_server.py`**: A FastMCP alapú helyi MCP szerver, amely eszközként teszi elérhetővé a piktogram leképezést.
+- **`cli.py`**: Parancssori felület az ágens közvetlen indításához.
 - **`skills.py`**: Programozott képességek (ARASAAC API hívás, kvíz generálás, gyorsítótár kezelés).
 - **`i18n.py`**: Tisztán Pythonban megírt fordításkezelő, amely beolvassa a nyelvi `.po` fájlokat.
 - **`langs/`**: A nyelvi fájlokat tartalmazó mappa (`en.po`, `hu.po`).
@@ -115,4 +127,20 @@ Az automatizált unit tesztek futtatása a `test_app.py` fájlban az aktivált v
 
 ```bash
 python3 -m unittest test_app.py
+```
+
+### Ágens CLI futtatása
+
+Futtassa az ágenst közvetlenül a terminálból:
+
+```bash
+python3 cli.py --text "Az autó megy. A busz megáll." --lang hu
+```
+
+### MCP Szerver indítása
+
+Indítsa el a Model Context Protocol (MCP) szervert:
+
+```bash
+python3 mcp_server.py
 ```

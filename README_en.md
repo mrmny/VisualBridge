@@ -8,15 +8,14 @@
 
 ## Core Features
 
-1. **Text Simplification Agent (Gemini-powered)**: Uses `gemini-3.5-flash` via the official `google-genai` SDK to convert complex paragraphs into simple, chronological, and active-voice sentences (conforming to Easy-to-Read standards).
-2. **Pictogram Mapping Agent**: Extracts key visual concepts (nouns, verbs, attributes) from the simplified text and maps them to standard symbols from the international ARASAAC library.
-3. **ARASAAC API Integration & Caching**: Direct API integration with the ARASAAC symbol repository, backed by a local JSON cache (`arasaac_cache.json`) to minimize external calls and speed up loads.
-4. **Interactive Comprehension Quizzes**: Generates 3-option visual quizzes based on the simplified text (1 correct answer, 2 distractors) to test child understanding, featuring celebratory screen animations (balloons).
-5. **Native Text-to-Speech (TTS)**: One-click "Read Aloud" buttons utilizing native browser Web Speech API (SpeechSynthesis) supporting both English and Hungarian voices.  
-  5.1. The Hungarian voice is not the best in the browser, so I extended the feature with the ability to read the pictograms on the right side as well.
-6. **Bilingual Localization (i18n)**: Fully localized interface in English and Hungarian managed dynamically via translation catalogs (`.po` files) in `langs/`.
-7. **Premium Responsive UI**: A Streamlit frontend customized with dark/light responsive styling, child-friendly layouts, hover effects, and custom CSS banners.
-8. **Simulated (Mock) Mode**: Works out-of-the-box without an active Gemini API key using deterministic templates, enabling local testing and development.
+1. **Text Simplification Agent (Gemini-powered)**: Uses the Google Agent Development Kit (ADK) with `gemini-3.5-flash` model to convert complex paragraphs into simple, chronological sentences (conforming to Easy-to-Read standards).
+2. **MCP Server Integration**: Includes a local Model Context Protocol (MCP) server exposing tools for pictogram mapping and quiz generation.
+3. **Security & Safety Guardrails**: Robust safety filters (hate speech, harassment, etc.) configured directly on the Gemini model via the ADK.
+4. **ARASAAC API Integration & Caching**: Direct API integration with the ARASAAC symbol repository, backed by a local JSON cache (`arasaac_cache.json`) to minimize external calls.
+5. **Interactive Comprehension Quizzes**: Generates 3-option visual quizzes (1 correct answer, 2 distractors) to test child understanding, featuring celebratory screen animations.
+6. **Native Text-to-Speech (TTS)**: Web Speech API integration for English and Hungarian voices.
+7. **Bilingual Localization (i18n)**: Fully localized interface in English and Hungarian managed dynamically via `.po` files.
+8. **Agent CLI**: A command-line interface (`cli.py`) allowing quick terminal-based testing and usage of the ADK agent.
 
 ---
 
@@ -25,25 +24,38 @@
 ```mermaid
 graph TD
     User[Teacher / Parent] -->|Input Text & Quiz Setup| App[Streamlit Interface - app.py]
+    CLI[Agent CLI - cli.py] -->|CLI Inputs| Agent[VisualBridge Agent - agents.py]
     App -->|Dynamic Locale Selection| Trans[Translation Manager - i18n.py]
-    App -->|Raw text| Agent[VisualBridge Agent - agents.py]
-    Agent -->|1. simplify_text| GeminiSimp[Gemini 3.5 Flash / Mock]
-    GeminiSimp -->|Simplified Sentences| Agent
-    Agent -->|2. extract_keywords| GeminiMap[Gemini 3.5 Flash / Mock]
-    GeminiMap -->|Keywords JSON| Agent
-    Agent -->|3. fetch_pictogram_by_keyword| Skills[Agent Skills - skills.py]
+    App -->|Raw text| Agent
+
+    subgraph Google Agent Development Kit ADK
+        Agent -->|1. simplify_text| GeminiSimp[Gemini 3.5 Flash + Safety]
+        GeminiSimp -->|Simplified Sentences| Agent
+        Agent -->|2. extract_keywords| GeminiMap[Gemini 3.5 Flash + Safety]
+        GeminiMap -->|Keywords JSON| Agent
+    end
+
+    subgraph Model Context Protocol MCP
+        Agent -->|3. fetch_pictogram MCP Tool| MCPServer[MCP Server - mcp_server.py]
+        MCPServer -->|Lookup| Skills[Agent Skills - skills.py]
+    end
+
     Skills -->|Lookup| Cache{arasaac_cache.json}
     Cache -->|Cache Miss| API[ARASAAC REST API]
     API -->|Save| Cache
-    Skills -->|Pictogram URLs| Agent
+    Skills -->|Pictogram URLs| MCPServer
+    MCPServer -->|Tool Response| Agent
     Agent -->|Structured Visual Payload| App
+    Agent -->|CLI Output| CLI
     App -->|Sentence + TTS + Pictograms| Child[Child Board]
     App -->|Quiz Setup| Skills
     Skills -->|Visual Quiz Options| Child
 ```
 
-- **`app.py`**: The main entrypoint. Handles layout partition (Left: Teacher/Parent panel, Right: Child game board) and custom styling injection.
-- **`agents.py`**: Multi-agent coordinator. Manages interactions with the Gemini API or switches to mock fallbacks.
+- **`app.py`**: The main entrypoint. Handles layout partition and custom styling injection.
+- **`agents.py`**: ADK coordinator agent utilizing `gemini-3.5-flash` with safety configuration.
+- **`mcp_server.py`**: High-performance MCP server built with `FastMCP` exposing core capabilities as tools.
+- **`cli.py`**: Command-line interface for the ADK agent.
 - **`skills.py`**: Integrates external capabilities such as the ARASAAC API, cache management, and quiz logic.
 - **`i18n.py`**: Pure Python translation catalog parser and lookup manager.
 - **`langs/`**: Holds translation catalogs (`en.po`, `hu.po`).
@@ -112,4 +124,20 @@ We maintain a comprehensive unit test suite in `test_app.py` covering mock simpl
 
 ```bash
 python3 -m unittest test_app.py
+```
+
+### Running the Agent CLI
+
+Interact with the VisualBridge ADK Agent directly from your terminal:
+
+```bash
+python3 cli.py --text "The car goes fast. The bus stops." --lang en
+```
+
+### Running the MCP Server
+
+Start the Model Context Protocol (MCP) server using the stdio transport:
+
+```bash
+python3 mcp_server.py
 ```
