@@ -130,6 +130,8 @@ msgstr "💡 Why I Chose This Project / Project Background"
 msgid "💡 Projekt háttér & Ágensek a jóért"
 msgstr "💡 Project Background & Agents for Good"
 
+msgid "🔊 Beszédbeállítások"
+msgstr "🔊 Speech Settings"
 
-
-
+msgid "Beszéd sebessége (0.5 - lassú, 1.0 - normál):"
+msgstr "Speech rate (0.5 - slow, 1.0 - normal):"

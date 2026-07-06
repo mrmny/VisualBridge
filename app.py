@@ -140,6 +140,20 @@ if st.session_state.current_lang != lang_code:
     st.rerun()
 
 
+# HU: Beszédsebesség csúszka a gyermekeknek
+# EN: Speech rate slider for children
+st.sidebar.write("---")
+st.sidebar.subheader(_("🔊 Beszédbeállítások"))
+speech_rate = st.sidebar.slider(
+    _("Beszéd sebessége (0.5 - lassú, 1.0 - normál):"),
+    min_value=0.5,
+    max_value=2.0,
+    value=1.0,
+    step=0.1,
+    key="speech_rate"
+)
+
+
 # HU: API kulcs beállítások az oldalsávban (különösen hasznos saját kulcs megadásakor)
 # EN: API key settings in the sidebar (especially useful for user-provided keys)
 base_title = _("API kulcs beállításai")
@@ -584,6 +598,7 @@ with col2:
                     var utterance = new SpeechSynthesisUtterance({repr(sentence_text)});
                     var speechLang = '{speech_lang}';
                     utterance.lang = speechLang;
+                    utterance.rate = {speech_rate};
 
                     var voices = window.speechSynthesis.getVoices();
                     var matchingVoice = null;
@@ -685,6 +700,7 @@ with col2:
                         window.speechSynthesis.cancel();
                         var utterance = new SpeechSynthesisUtterance(word);
                         utterance.lang = '{speech_lang}';
+                        utterance.rate = {speech_rate};
 
                         var voices = window.speechSynthesis.getVoices();
                         var matchingVoice = null;
@@ -770,6 +786,7 @@ with col2:
                         window.speechSynthesis.cancel();
                         var utterance = new SpeechSynthesisUtterance(word);
                         utterance.lang = '{speech_lang}';
+                        utterance.rate = {speech_rate};
                         var voices = window.speechSynthesis.getVoices();
                         var matchingVoice = null;
                         for (var i = 0; i < voices.length; i++) {{

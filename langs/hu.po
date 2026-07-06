@@ -130,6 +130,8 @@ msgstr "💡 Miért ezt a projektet választottam? / Projekt háttér"
 msgid "💡 Projekt háttér & Ágensek a jóért"
 msgstr "💡 Projekt háttér & Ágensek a jóért"
 
+msgid "🔊 Beszédbeállítások"
+msgstr "🔊 Beszédbeállítások"
 
-
-
+msgid "Beszéd sebessége (0.5 - lassú, 1.0 - normál):"
+msgstr "Beszéd sebessége (0.5 - lassú, 1.0 - normál):"
