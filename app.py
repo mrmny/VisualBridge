@@ -115,6 +115,17 @@ def show_history_dialog(lang):
         st.error(f"File {history_file} not found.")
 
 
+# HU: Oldalsáv navigáció a két funkció között
+# EN: Sidebar navigation between the two features
+st.sidebar.subheader(_("🧭 Navigáció"))
+selected_mode = st.sidebar.radio(
+    _("Válasszon funkciót:"),
+    options=["VisualBridge", "Text Simplifier"],
+    format_func=lambda x: _(x),
+    key="sidebar_nav"
+)
+st.sidebar.write("---")
+
 # HU: "Olvass el" gomb a használati útmutató megnyitásához a nyelvválasztás felett
 # EN: "Read me" button to open the user guide above the language selector
 if st.sidebar.button(_("📖 Használati útmutató / Olvass el"), key="btn_readme_dialog", use_container_width=True):
@@ -392,413 +403,546 @@ st.markdown("""
 if "agent" not in st.session_state or not hasattr(st.session_state.agent, "is_mock"):
     st.session_state.agent = VisualBridgeAgent()
 
-# HU: Egyedi fejléc banner renderelése
-# EN: Render custom header banner
-st.markdown(f"""
-<div class="banner">
-    <h1>{_('🌲 VisualBridge – Vizuális Akadálymentesítő Asszisztens')}</h1>
-    <p>{_('Segítség az autizmus spektrumzavarral és beszédfogyatékossággal élő gyermekek oktatásában.')}</p>
-</div>
-""", unsafe_allow_html=True)
+if selected_mode == "VisualBridge":
+    # HU: Egyedi fejléc banner renderelése
+    # EN: Render custom header banner
+    st.markdown(f"""
+    <div class="banner">
+        <h1>{_('🌲 VisualBridge – Vizuális Akadálymentesítő Asszisztens')}</h1>
+        <p>{_('Segítség az autizmus spektrumzavarral és beszédfogyatékossággal élő gyermekek oktatásában.')}</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-# HU: Ellenőrizzük, hogy az ágens szimulációs módban fut-e
-# EN: Check if the agent is running in mock/simulation mode
-if st.session_state.agent.is_mock:
-    st.info(_("ℹ️ Szimulációs (Mock) mód aktív: Az ágens API kulcs nélkül, helyi szimulációval működik."))
+    # HU: Ellenőrizzük, hogy az ágens szimulációs módban fut-e
+    # EN: Check if the agent is running in mock/simulation mode
+    if st.session_state.agent.is_mock:
+        st.info(_("ℹ️ Szimulációs (Mock) mód aktív: Az ágens API kulcs nélkül, helyi szimulációval működik."))
 
 
-# HU: Konstansok a SonarLint figyelmeztetések kiküszöbölésére
-# EN: Constants to resolve SonarLint duplicate literal warnings
-CHOCOLATE_HU = "csokoládé"
+    # HU: Konstansok a SonarLint figyelmeztetések kiküszöbölésére
+    # EN: Constants to resolve SonarLint duplicate literal warnings
+    CHOCOLATE_HU = "csokoládé"
 
-# HU: Sablonok a különböző célcsoportokhoz
-# EN: Templates for different target profiles
-TEMPLATES = {
-    "neutral": {
-        "hu": {
-            "text": "A tölgyfa hatalmas koronájával árnyékot ad. A tölgyfa vizet iszik a földből a gyökereivel.",
-            "correct": "víz",
-            "dist1": "autó",
-            "dist2": CHOCOLATE_HU,
-            "icon": "🧒"
+    # HU: Sablonok a különböző célcsoportokhoz
+    # EN: Templates for different target profiles
+    TEMPLATES = {
+        "neutral": {
+            "hu": {
+                "text": "A tölgyfa hatalmas koronájával árnyékot ad. A tölgyfa vizet iszik a földből a gyökereivel.",
+                "correct": "víz",
+                "dist1": "autó",
+                "dist2": CHOCOLATE_HU,
+                "icon": "🧒"
+            },
+            "en": {
+                "text": "The oak tree provides shade with its huge crown. The oak tree drinks water from the soil with its roots.",
+                "correct": "water",
+                "dist1": "car",
+                "dist2": "chocolate",
+                "icon": "🧒"
+            }
         },
-        "en": {
-            "text": "The oak tree provides shade with its huge crown. The oak tree drinks water from the soil with its roots.",
-            "correct": "water",
-            "dist1": "car",
-            "dist2": "chocolate",
-            "icon": "🧒"
-        }
-    },
-    "boy": {
-        "hu": {
-            "text": "A piros autó nagyon gyorsan száguld, a sárga busz pedig megáll.",
-            "correct": "autó",
-            "dist1": "busz",
-            "dist2": "vonat",
-            "icon": "👦"
+        "boy": {
+            "hu": {
+                "text": "A piros autó nagyon gyorsan száguld, a sárga busz pedig megáll.",
+                "correct": "autó",
+                "dist1": "busz",
+                "dist2": "vonat",
+                "icon": "👦"
+            },
+            "en": {
+                "text": "The red car goes fast, but the yellow bus stops.",
+                "correct": "car",
+                "dist1": "bus",
+                "dist2": "train",
+                "icon": "👦"
+            }
         },
-        "en": {
-            "text": "The red car goes fast, but the yellow bus stops.",
-            "correct": "car",
-            "dist1": "bus",
-            "dist2": "train",
-            "icon": "👦"
-        }
-    },
-    "girl": {
-        "hu": {
-            "text": "A kislány a szép babával játszik, miközben a pöttyös labda elgurul.",
-            "correct": "baba",
-            "dist1": "labda",
-            "dist2": "maci",
-            "icon": "👧"
-        },
-        "en": {
-            "text": "The little girl plays with the beautiful doll, while the polka dot ball rolls away.",
-            "correct": "doll",
-            "dist1": "ball",
-            "dist2": "teddy bear",
-            "icon": "👧"
+        "girl": {
+            "hu": {
+                "text": "A kislány a szép babával játszik, miközben a pöttyös labda elgurul.",
+                "correct": "baba",
+                "dist1": "labda",
+                "dist2": "maci",
+                "icon": "👧"
+            },
+            "en": {
+                "text": "The little girl plays with the beautiful doll, while the polka dot ball rolls away.",
+                "correct": "doll",
+                "dist1": "ball",
+                "dist2": "teddy bear",
+                "icon": "👧"
+            }
         }
     }
-}
 
-# HU: Felület felosztása két oszlopra (Bal oldal: Tanár/Szülő, Jobb oldal: Gyermek)
-# EN: Partition layout into two columns (Left: Teacher/Parent, Right: Child)
-col1, col2 = st.columns([1, 1])
+    # HU: Felület felosztása két oszlopra (Bal oldal: Tanár/Szülő, Jobb oldal: Gyermek)
+    # EN: Partition layout into two columns (Left: Teacher/Parent, Right: Child)
+    col1, col2 = st.columns([1, 1])
 
-with col1:
-    st.header(_("🪪 Pedagógus / Szülő felület"))
+    with col1:
+        st.header(_("🪪 Pedagógus / Szülő felület"))
 
-    # HU: Profilválasztó legördülő
-    # EN: Target profile selectbox
-    profile_options = {
-        "neutral": _("Semleges (Tölgyfa / Víz)"),
-        "boy": _("Fiú (Autó / Busz)"),
-        "girl": _("Lány (Baba / Labda)")
-    }
+        # HU: Profilválasztó legördülő
+        # EN: Target profile selectbox
+        profile_options = {
+            "neutral": _("Semleges (Tölgyfa / Víz)"),
+            "boy": _("Fiú (Autó / Busz)"),
+            "girl": _("Lány (Baba / Labda)")
+        }
 
-    selected_profile = st.selectbox(
-        _("Célcsoport profilja (sablon):"),
-        options=list(profile_options.keys()),
-        format_func=lambda x: profile_options[x]
-    )
+        selected_profile = st.selectbox(
+            _("Célcsoport profilja (sablon):"),
+            options=list(profile_options.keys()),
+            format_func=lambda x: profile_options[x]
+        )
 
-    if "current_profile" not in st.session_state:
-        st.session_state.current_profile = "neutral"
+        if "current_profile" not in st.session_state:
+            st.session_state.current_profile = "neutral"
 
-    # HU: Ha változott a profil, frissítjük az állapotot és ürítjük a korábbi eredményt
-    # EN: If the profile changed, update state and clear past result
-    if selected_profile != st.session_state.current_profile:
-        st.session_state.current_profile = selected_profile
-        st.session_state.result = None
+        # HU: Ha változott a profil, frissítjük az állapotot és ürítjük a korábbi eredményt
+        # EN: If the profile changed, update state and clear past result
+        if selected_profile != st.session_state.current_profile:
+            st.session_state.current_profile = selected_profile
+            st.session_state.result = None
 
-    st.write("---")
-    st.subheader(_("Írja be a nyers tananyagot vagy utasítást:"))
-
-    # HU: Aktuális sablon kiválasztása nyelv és profil alapján
-    # EN: Select current template based on language and profile
-    template = TEMPLATES[st.session_state.current_profile][lang_code]
-
-    # HU: Dinamikus kulcsok, hogy a widgetek frissüljenek profilváltáskor
-    # EN: Dynamic keys to trigger widget refresh upon profile change
-    input_key = f"user_input_{lang_code}_{st.session_state.current_profile}"
-    correct_key = f"correct_w_{lang_code}_{st.session_state.current_profile}"
-    dist1_key = f"dist1_{lang_code}_{st.session_state.current_profile}"
-    dist2_key = f"dist2_{lang_code}_{st.session_state.current_profile}"
-
-    user_input = st.text_area(_("Bemeneti szöveg:"), value=template["text"], height=150, key=input_key)
-
-    # HU: Kvíz beállítási lehetőségek a szülőnek
-    # EN: Quiz setup configuration for parents
-    st.subheader(_("🎲 Kvíz beállításai (Szövegértés ellenőrzése)"))
-    if st.session_state.current_profile == "boy":
-        correct_label = _("Helyes válasz szava (pl. mi száguld gyorsan?):")
-    elif st.session_state.current_profile == "girl":
-        correct_label = _("Helyes válasz szava (pl. mivel játszik a kislány?):")
-    else:
-        correct_label = _("Helyes válasz szava (pl. mi kell a fának?):")
-    correct_w = st.text_input(correct_label, value=template["correct"], key=correct_key)
-    distractor_1 = st.text_input(_("1. Rossz opció (Tévesztő):"), value=template["dist1"], key=dist1_key)
-    distractor_2 = st.text_input(_("2. Rossz opció (Tévesztő):"), value=template["dist2"], key=dist2_key)
-
-    generate_button = st.button(_("🚀 Vizuális anyag generálása"), type="primary")
-
-with col2:
-    st.markdown('<div id="child-panel-anchor"></div>', unsafe_allow_html=True)
-    child_icon = TEMPLATES[st.session_state.current_profile][lang_code]["icon"]
-    st.header(f"{child_icon} {_('Gyermek felület')}")
-
-    if generate_button and user_input:
-        with st.spinner(_("Az ágens dolgozik, tőmondatokat és piktogramokat készít...")):
-            try:
-                # HU: Futtatjuk a teljes ágens folyamatot (Pipeline) a kiválasztott nyelven
-                # EN: Run the full agent pipeline in the selected language
-                st.session_state.result = st.session_state.agent.process_pipeline(user_input, lang=lang_code)
-                if st.session_state.user_api_key.strip():
-                    st.session_state.api_key_valid = True
-            except Exception as e:
-                if st.session_state.user_api_key.strip():
-                    st.session_state.api_key_valid = False
-                error_msg = _("Hiba történt a feldolgozás során: {e}").format(e=e)
-                st.error(error_msg)
-                st.info(_("Kérjük, ellenőrizze, hogy az API kulcsa érvényes-e és van-e internetkapcsolat."))
-
-    if st.session_state.result:
-        st.success(_("Elkészült a vizuális tananyag!"))
         st.write("---")
+        st.subheader(_("Írja be a nyers tananyagot vagy utasítást:"))
 
-        # HU: Végigmegyünk a feldolgozott történet mondatain
-        # EN: Loop through sentences of the processed story
-        for item in st.session_state.result.get("processed_story", []):
-            # HU: Megjelenítjük a letisztult, Könnyen Érthető tőmondatot hangfelolvasó gombbal
-            # EN: Display the clean, Easy-to-Read simplified sentence with a Read Aloud button
-            sentence_text = item.get("sentence", "")
-            speech_lang = "hu-HU" if lang_code == "hu" else "en-US"
-            btn_tooltip = _("🔊 Felolvasás")
+        # HU: Aktuális sablon kiválasztása nyelv és profil alapján
+        # EN: Select current template based on language and profile
+        template = TEMPLATES[st.session_state.current_profile][lang_code]
 
-            # HU: Egyedi HTML/CSS kártya beágyazása a böngésző natív felolvasójával, Bootstrap osztályokkal
-            # EN: Embed custom HTML/CSS card with browser-native text-to-speech using Bootstrap classes
-            bootstrap_tag = f"<style>{bootstrap_css}</style>" if 'bootstrap_css' in globals() else ""
-            card_html = f"""
-            {bootstrap_tag}
-            <style>
-                body {{
-                    margin: 0;
-                    padding: 4px;
-                    background: transparent;
-                }}
-                .card {{
-                    background-color: #e2e8f0 !important;
-                    border-color: rgba(128, 128, 128, 0.15) !important;
-                }}
-                /* Custom styles for gradient, shadows, hover animations */
-                .speak-btn-custom {{
-                    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
-                    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
-                    transition: transform 0.2s, filter 0.2s;
-                    border: none !important;
-                }}
-                .speak-btn-custom:hover {{
-                    transform: scale(1.08);
-                    filter: brightness(1.1);
-                }}
-            </style>
-            <div class="card p-3 d-flex flex-row justify-content-between align-items-center border-start border-primary border-4 shadow-sm">
-                <div class="fs-5 fw-bold" style="color: #1e293b !important;">{sentence_text}</div>
-                <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center speak-btn-custom"
-                        style="width: 44px; height: 44px; min-width: 44px; min-height: 44px; font-size: 18px;"
-                        id="speak-btn"
-                        title="{btn_tooltip}">🔊</button>
-            </div>
-            <script>
-                document.getElementById('speak-btn').addEventListener('click', function() {{
-                    window.speechSynthesis.cancel();
-                    var utterance = new SpeechSynthesisUtterance({repr(sentence_text)});
-                    var speechLang = '{speech_lang}';
-                    utterance.lang = speechLang;
-                    utterance.rate = {speech_rate};
+        # HU: Dinamikus kulcsok, hogy a widgetek frissüljenek profilváltáskor
+        # EN: Dynamic keys to trigger widget refresh upon profile change
+        input_key = f"user_input_{lang_code}_{st.session_state.current_profile}"
+        correct_key = f"correct_w_{lang_code}_{st.session_state.current_profile}"
+        dist1_key = f"dist1_{lang_code}_{st.session_state.current_profile}"
+        dist2_key = f"dist2_{lang_code}_{st.session_state.current_profile}"
 
-                    var voices = window.speechSynthesis.getVoices();
-                    var matchingVoice = null;
+        user_input = st.text_area(_("Bemeneti szöveg:"), value=template["text"], height=150, key=input_key)
 
-                    // 1. Try exact match (e.g., hu-HU or en-US)
-                    for (var i = 0; i < voices.length; i++) {{
-                        if (voices[i].lang.toLowerCase() === speechLang.toLowerCase()) {{
-                            matchingVoice = voices[i];
-                            break;
-                        }}
-                    }}
+        # HU: Kvíz beállítási lehetőségek a szülőnek
+        # EN: Quiz setup configuration for parents
+        st.subheader(_("🎲 Kvíz beállításai (Szövegértés ellenőrzése)"))
+        if st.session_state.current_profile == "boy":
+            correct_label = _("Helyes válasz szava (pl. mi száguld gyorsan?):")
+        elif st.session_state.current_profile == "girl":
+            correct_label = _("Helyes válasz szava (pl. mivel játszik a kislány?):")
+        else:
+            correct_label = _("Helyes válasz szava (pl. mi kell a fának?):")
+        correct_w = st.text_input(correct_label, value=template["correct"], key=correct_key)
+        distractor_1 = st.text_input(_("1. Rossz opció (Tévesztő):"), value=template["dist1"], key=dist1_key)
+        distractor_2 = st.text_input(_("2. Rossz opció (Tévesztő):"), value=template["dist2"], key=dist2_key)
 
-                    // 2. Try prefix match (e.g., hu or en)
-                    if (!matchingVoice) {{
-                        var langPrefix = speechLang.split('-')[0].toLowerCase();
-                        for (var i = 0; i < voices.length; i++) {{
-                            if (voices[i].lang.toLowerCase().startsWith(langPrefix)) {{
-                                matchingVoice = voices[i];
-                                break;
-                            }}
-                        }}
-                    }}
+        generate_button = st.button(_("🚀 Vizuális anyag generálása"), type="primary")
 
-                    if (matchingVoice) {{
-                        utterance.voice = matchingVoice;
-                    }}
-                    window.speechSynthesis.speak(utterance);
-                }});
-            </script>
-            """
-            components.html(card_html, height=95)
+    with col2:
+        st.markdown('<div id="child-panel-anchor"></div>', unsafe_allow_html=True)
+        child_icon = TEMPLATES[st.session_state.current_profile][lang_code]["icon"]
+        st.header(f"{child_icon} {_('Gyermek felület')}")
 
-            # HU: Kirakjuk egymás mellé a mondathoz tartozó piktogramokat hangfelolvasással
-            # EN: Place pictograms side-by-side below the sentence with click-to-speak
-            tokens = item.get("tokens_with_pics", [])
-            if tokens:
-                speech_lang = "hu-HU" if lang_code == "hu" else "en-US"
-                bootstrap_tag = f"<style>{bootstrap_css}</style>" if 'bootstrap_css' in globals() else ""
+        if generate_button and user_input:
+            with st.spinner(_("Az ágens dolgozik, tőmondatokat és piktogramokat készít...")):
+                try:
+                    # HU: Futtatjuk a teljes ágens folyamatot (Pipeline) a kiválasztott nyelven
+                    # EN: Run the full agent pipeline in the selected language
+                    st.session_state.result = st.session_state.agent.process_pipeline(user_input, lang=lang_code)
+                    if st.session_state.user_api_key.strip():
+                        st.session_state.api_key_valid = True
+                except Exception as e:
+                    if st.session_state.user_api_key.strip():
+                        st.session_state.api_key_valid = False
+                    error_msg = _("Hiba történt a feldolgozás során: {e}").format(e=e)
+                    st.error(error_msg)
+                    st.info(_("Kérjük, ellenőrizze, hogy az API kulcsa érvényes-e és van-e internetkapcsolat."))
 
-                pics_html = f"""
-                {bootstrap_tag}
-                <style>
-                    body {{
-                        margin: 0;
-                        padding: 10px 4px;
-                        background: transparent;
-                        overflow: hidden;
-                    }}
-                    .pic-card {{
-                        background-color: #e2e8f0 !important;
-                        border: 2px solid rgba(128, 128, 128, 0.15) !important;
-                        border-radius: 16px !important;
-                        padding: 12px !important;
-                        text-align: center !important;
-                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
-                        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
-                        margin-bottom: 12px;
-                        cursor: pointer;
-                        display: inline-block;
-                        width: 130px;
-                    }}
-                    .pic-card:hover {{
-                        transform: translateY(-6px) scale(1.03) !important;
-                        box-shadow: 0 10px 20px -3px rgba(59, 130, 246, 0.15) !important;
-                        border-color: #3b82f6 !important;
-                    }}
-                    .pic-label {{
-                        font-family: 'Inter', sans-serif;
-                        font-size: 13px;
-                        font-weight: bold;
-                        text-align: center;
-                        text-transform: uppercase;
-                        color: #1e293b !important;
-                        opacity: 0.9;
-                        margin-top: 8px;
-                        word-wrap: break-word;
-                    }}
-                    .pics-container {{
-                        display: flex;
-                        flex-wrap: wrap;
-                        gap: 15px;
-                        justify-content: flex-start;
-                    }}
-                </style>
-                <div class="pics-container">
-                """
-                for idx, token in enumerate(tokens):
-                    word_escaped = token['word'].replace("'", "\\'")
-                    pics_html += f"""
-                    <div class="pic-card" onclick="speakWord('{word_escaped}')" title="{_('🔊 Felolvasás')}">
-                        <img src="{token['image_url']}" style="width: 100px; height: 100px; object-fit: contain;" />
-                        <div class="pic-label">{token['word'].upper()}</div>
-                    </div>
-                    """
-                pics_html += f"""
-                </div>
-                <script>
-                    function speakWord(word) {{
-                        window.speechSynthesis.cancel();
-                        var utterance = new SpeechSynthesisUtterance(word);
-                        utterance.lang = '{speech_lang}';
-                        utterance.rate = {speech_rate};
-
-                        var voices = window.speechSynthesis.getVoices();
-                        var matchingVoice = null;
-                        for (var i = 0; i < voices.length; i++) {{
-                            if (voices[i].lang.toLowerCase() === utterance.lang.toLowerCase()) {{
-                                matchingVoice = voices[i];
-                                break;
-                            }}
-                        }}
-                        if (!matchingVoice) {{
-                            var prefix = utterance.lang.split('-')[0].toLowerCase();
-                            for (var i = 0; i < voices.length; i++) {{
-                                if (voices[i].lang.toLowerCase().startsWith(prefix)) {{
-                                    matchingVoice = voices[i];
-                                    break;
-                                }}
-                            }}
-                        }}
-                        if (matchingVoice) {{
-                            utterance.voice = matchingVoice;
-                        }}
-                        window.speechSynthesis.speak(utterance);
-                    }}
-                </script>
-                """
-                height = 185 if len(tokens) <= 4 else 360
-                components.html(pics_html, height=height)
+        if st.session_state.result:
+            st.success(_("Elkészült a vizuális tananyag!"))
             st.write("---")
 
-        # HU: ---------------- INTERAKTÍV KVÍZ SZAKASZ ----------------
-        # EN: ---------------- INTERACTIVE QUIZ SECTION ----------------
-        st.header(_("🧩 Ügyes vagy! Válaszolj a kérdésre:"))
-
-        # HU: Legeneráljuk a kvíz adatait a megadott szavakból a skills.py segítségével, nyelv-specifikusan
-        # EN: Generate quiz data from inputs using skills.py, localized
-        quiz_data = generate_non_verbal_quiz(correct_w, [distractor_1, distractor_2], locale=lang_code)
-
-        st.subheader(quiz_data["question"])
-
-        # HU: Megjelenítjük a 3 válaszlehetőséget piktogramként, gombokkal
-        # EN: Show the 3 quiz choices as pictograms with action buttons
-        quiz_cols = st.columns(3)
-        for idx, option in enumerate(quiz_data["options"]):
-            with quiz_cols[idx]:
+            # HU: Végigmegyünk a feldolgozott történet mondatain
+            # EN: Loop through sentences of the processed story
+            for item in st.session_state.result.get("processed_story", []):
+                # HU: Megjelenítjük a letisztult, Könnyen Érthető tőmondatot hangfelolvasó gombbal
+                # EN: Display the clean, Easy-to-Read simplified sentence with a Read Aloud button
+                sentence_text = item.get("sentence", "")
                 speech_lang = "hu-HU" if lang_code == "hu" else "en-US"
-                bootstrap_tag = f"<style>{bootstrap_css}</style>" if 'bootstrap_css' in globals() else ""
-                word_escaped = option['word'].replace("'", "\\'")
+                btn_tooltip = _("🔊 Felolvasás")
 
-                quiz_card_html = f"""
+                # HU: Egyedi HTML/CSS kártya beágyazása a böngésző natív felolvasójával, Bootstrap osztályokkal
+                # EN: Embed custom HTML/CSS card with browser-native text-to-speech using Bootstrap classes
+                bootstrap_tag = f"<style>{bootstrap_css}</style>" if 'bootstrap_css' in globals() else ""
+                card_html = f"""
                 {bootstrap_tag}
                 <style>
                     body {{
                         margin: 0;
                         padding: 4px;
                         background: transparent;
-                        overflow: hidden;
                     }}
-                    .pic-card {{
+                    .card {{
                         background-color: #e2e8f0 !important;
-                        border: 2px solid rgba(128, 128, 128, 0.15) !important;
-                        border-radius: 16px !important;
-                        padding: 12px !important;
-                        text-align: center !important;
-                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
-                        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
-                        cursor: pointer;
-                        height: 148px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
+                        border-color: rgba(128, 128, 128, 0.15) !important;
                     }}
-                    .pic-card:hover {{
-                        transform: translateY(-4px) scale(1.02) !important;
-                        box-shadow: 0 10px 20px -3px rgba(59, 130, 246, 0.15) !important;
-                        border-color: #3b82f6 !important;
+                    /* Custom styles for gradient, shadows, hover animations */
+                    .speak-btn-custom {{
+                        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+                        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+                        transition: transform 0.2s, filter 0.2s;
+                        border: none !important;
+                    }}
+                    .speak-btn-custom:hover {{
+                        transform: scale(1.08);
+                        filter: brightness(1.1);
                     }}
                 </style>
-                <div class="pic-card" onclick="speakWord('{word_escaped}')" title="{_('🔊 Felolvasás')}">
-                    <img src="{option['url']}" style="width: 120px; height: 120px; object-fit: contain;" />
+                <div class="card p-3 d-flex flex-row justify-content-between align-items-center border-start border-primary border-4 shadow-sm">
+                    <div class="fs-5 fw-bold" style="color: #1e293b !important;">{sentence_text}</div>
+                    <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center speak-btn-custom"
+                            style="width: 44px; height: 44px; min-width: 44px; min-height: 44px; font-size: 18px;"
+                            id="speak-btn"
+                            title="{btn_tooltip}">🔊</button>
                 </div>
                 <script>
-                    function speakWord(word) {{
+                    document.getElementById('speak-btn').addEventListener('click', function() {{
                         window.speechSynthesis.cancel();
-                        var utterance = new SpeechSynthesisUtterance(word);
-                        utterance.lang = '{speech_lang}';
+                        var utterance = new SpeechSynthesisUtterance({repr(sentence_text)});
+                        var speechLang = '{speech_lang}';
+                        utterance.lang = speechLang;
+                        utterance.rate = {speech_rate};
+
+                        var voices = window.speechSynthesis.getVoices();
+                        var matchingVoice = null;
+
+                        // 1. Try exact match (e.g., hu-HU or en-US)
+                        for (var i = 0; i < voices.length; i++) {{
+                            if (voices[i].lang.toLowerCase() === speechLang.toLowerCase()) {{
+                                matchingVoice = voices[i];
+                                break;
+                            }}
+                        }}
+
+                        // 2. Try prefix match (e.g., hu or en)
+                        if (!matchingVoice) {{
+                            var langPrefix = speechLang.split('-')[0].toLowerCase();
+                            for (var i = 0; i < voices.length; i++) {{
+                                if (voices[i].lang.toLowerCase().startsWith(langPrefix)) {{
+                                    matchingVoice = voices[i];
+                                    break;
+                                }}
+                            }}
+                        }}
+
+                        if (matchingVoice) {{
+                            utterance.voice = matchingVoice;
+                        }}
+                        window.speechSynthesis.speak(utterance);
+                    }});
+                </script>
+                """
+                components.html(card_html, height=95)
+
+                # HU: Kirakjuk egymás mellé a mondathoz tartozó piktogramokat hangfelolvasással
+                # EN: Place pictograms side-by-side below the sentence with click-to-speak
+                tokens = item.get("tokens_with_pics", [])
+                if tokens:
+                    speech_lang = "hu-HU" if lang_code == "hu" else "en-US"
+                    bootstrap_tag = f"<style>{bootstrap_css}</style>" if 'bootstrap_css' in globals() else ""
+
+                    pics_html = f"""
+                    {bootstrap_tag}
+                    <style>
+                        body {{
+                            margin: 0;
+                            padding: 10px 4px;
+                            background: transparent;
+                            overflow: hidden;
+                        }}
+                        .pic-card {{
+                            background-color: #e2e8f0 !important;
+                            border: 2px solid rgba(128, 128, 128, 0.15) !important;
+                            border-radius: 16px !important;
+                            padding: 12px !important;
+                            text-align: center !important;
+                            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+                            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+                            margin-bottom: 12px;
+                            cursor: pointer;
+                            display: inline-block;
+                            width: 130px;
+                        }}
+                        .pic-card:hover {{
+                            transform: translateY(-6px) scale(1.03) !important;
+                            box-shadow: 0 10px 20px -3px rgba(59, 130, 246, 0.15) !important;
+                            border-color: #3b82f6 !important;
+                        }}
+                        .pic-label {{
+                            font-family: 'Inter', sans-serif;
+                            font-size: 13px;
+                            font-weight: bold;
+                            text-align: center;
+                            text-transform: uppercase;
+                            color: #1e293b !important;
+                            opacity: 0.9;
+                            margin-top: 8px;
+                            word-wrap: break-word;
+                        }}
+                        .pics-container {{
+                            display: flex;
+                            flex-wrap: wrap;
+                            gap: 15px;
+                            justify-content: flex-start;
+                        }}
+                    </style>
+                    <div class="pics-container">
+                    """
+                    for idx, token in enumerate(tokens):
+                        word_escaped = token['word'].replace("'", "\\'")
+                        pics_html += f"""
+                        <div class="pic-card" onclick="speakWord('{word_escaped}')" title="{_('🔊 Felolvasás')}">
+                            <img src="{token['image_url']}" style="width: 100px; height: 100px; object-fit: contain;" />
+                            <div class="pic-label">{token['word'].upper()}</div>
+                        </div>
+                        """
+                    pics_html += f"""
+                    </div>
+                    <script>
+                        function speakWord(word) {{
+                            window.speechSynthesis.cancel();
+                            var utterance = new SpeechSynthesisUtterance(word);
+                            utterance.lang = '{speech_lang}';
+                            utterance.rate = {speech_rate};
+
+                            var voices = window.speechSynthesis.getVoices();
+                            var matchingVoice = null;
+                            for (var i = 0; i < voices.length; i++) {{
+                                if (voices[i].lang.toLowerCase() === utterance.lang.toLowerCase()) {{
+                                    matchingVoice = voices[i];
+                                    break;
+                                }}
+                            }}
+                            if (!matchingVoice) {{
+                                var prefix = utterance.lang.split('-')[0].toLowerCase();
+                                for (var i = 0; i < voices.length; i++) {{
+                                    if (voices[i].lang.toLowerCase().startsWith(prefix)) {{
+                                        matchingVoice = voices[i];
+                                        break;
+                                    }}
+                                }}
+                            }}
+                            if (matchingVoice) {{
+                                utterance.voice = matchingVoice;
+                            }}
+                            window.speechSynthesis.speak(utterance);
+                        }}
+                    </script>
+                    """
+                    height = 185 if len(tokens) <= 4 else 360
+                    components.html(pics_html, height=height)
+                st.write("---")
+
+            # HU: ---------------- INTERAKTÍV KVÍZ SZAKASZ ----------------
+            # EN: ---------------- INTERACTIVE QUIZ SECTION ----------------
+            st.header(_("🧩 Ügyes vagy! Válaszolj a kérdésre:"))
+
+            # HU: Legeneráljuk a kvíz adatait a megadott szavakból a skills.py segítségével, nyelv-specifikusan
+            # EN: Generate quiz data from inputs using skills.py, localized
+            quiz_data = generate_non_verbal_quiz(correct_w, [distractor_1, distractor_2], locale=lang_code)
+
+            st.subheader(quiz_data["question"])
+
+            # HU: Megjelenítjük a 3 válaszlehetőséget piktogramként, gombokkal
+            # EN: Show the 3 quiz choices as pictograms with action buttons
+            quiz_cols = st.columns(3)
+            for idx, option in enumerate(quiz_data["options"]):
+                with quiz_cols[idx]:
+                    speech_lang = "hu-HU" if lang_code == "hu" else "en-US"
+                    bootstrap_tag = f"<style>{bootstrap_css}</style>" if 'bootstrap_css' in globals() else ""
+                    word_escaped = option['word'].replace("'", "\\'")
+
+                    quiz_card_html = f"""
+                    {bootstrap_tag}
+                    <style>
+                        body {{
+                            margin: 0;
+                            padding: 4px;
+                            background: transparent;
+                            overflow: hidden;
+                        }}
+                        .pic-card {{
+                            background-color: #e2e8f0 !important;
+                            border: 2px solid rgba(128, 128, 128, 0.15) !important;
+                            border-radius: 16px !important;
+                            padding: 12px !important;
+                            text-align: center !important;
+                            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+                            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+                            cursor: pointer;
+                            height: 148px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }}
+                        .pic-card:hover {{
+                            transform: translateY(-4px) scale(1.02) !important;
+                            box-shadow: 0 10px 20px -3px rgba(59, 130, 246, 0.15) !important;
+                            border-color: #3b82f6 !important;
+                        }}
+                    </style>
+                    <div class="pic-card" onclick="speakWord('{word_escaped}')" title="{_('🔊 Felolvasás')}">
+                        <img src="{option['url']}" style="width: 120px; height: 120px; object-fit: contain;" />
+                    </div>
+                    <script>
+                        function speakWord(word) {{
+                            window.speechSynthesis.cancel();
+                            var utterance = new SpeechSynthesisUtterance(word);
+                            utterance.lang = '{speech_lang}';
+                            utterance.rate = {speech_rate};
+                            var voices = window.speechSynthesis.getVoices();
+                            var matchingVoice = null;
+                            for (var i = 0; i < voices.length; i++) {{
+                                if (voices[i].lang.toLowerCase() === utterance.lang.toLowerCase()) {{
+                                    matchingVoice = voices[i];
+                                    break;
+                                }}
+                            }}
+                            if (!matchingVoice) {{
+                                var prefix = utterance.lang.split('-')[0].toLowerCase();
+                                for (var i = 0; i < voices.length; i++) {{
+                                    if (voices[i].lang.toLowerCase().startsWith(prefix)) {{
+                                        matchingVoice = voices[i];
+                                        break;
+                                    }}
+                                }}
+                            }}
+                            if (matchingVoice) {{
+                                utterance.voice = matchingVoice;
+                            }}
+                            window.speechSynthesis.speak(utterance);
+                        }}
+                    </script>
+                    """
+                    components.html(quiz_card_html, height=160)
+
+                    # HU: Ha a gyermek rákattint a gombra (a gomb felirata fordított)
+                    # EN: Triggered when child clicks answer button (translated label)
+                    btn_label = _("Ez a(z) {word}").format(word=option['word'])
+                    if st.button(btn_label, key=f"btn_{idx}"):
+                        if option["is_correct"]:
+                            st.balloons() # HU: Látványos animáció / EN: Fun balloons animation
+                            st.success(_("🌟 Szuper! Ez a helyes válasz! 🌟"))
+                        else:
+                            st.error(_("❌ Próbáld meg még egyszer! ❌"))
+        else:
+            st.info(_("Kattints a bal oldalon a 'Vizuális anyag generálása' gombra a kezdéshez."))
+
+
+elif selected_mode == "Text Simplifier":
+    st.markdown(f"""
+    <div class="banner">
+        <h1>{_('✍️ VisualBridge – Könnyen Érthető Szövegegyszerűsítő')}</h1>
+        <p>{_('Komplex szövegek átalakítása egyszerű tőmondatokká a könnyebb megértés érdekében.')}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.session_state.agent.is_mock:
+        st.warning(_("A Szövegegyszerűsítő használatához valós Gemini API kulcs szükséges."))
+        st.info(_("Kérjük, adjon meg egy kulcsot a hozzáférés feloldásához."))
+
+        page_api_key_input = st.text_input(
+            _("Adja meg a Gemini API kulcsot itt:"),
+            type="password",
+            key="page_api_key_input"
+        )
+        if st.button(_("Kulcs mentése"), key="btn_save_page_key", type="primary"):
+            if page_api_key_input.strip():
+                import time
+                st.session_state.user_api_key = page_api_key_input
+                st.session_state.api_key_valid = None
+                st.session_state.key_expiry_time = time.time() * 1000 + 30 * 60 * 1000
+                st.session_state.agent.update_api_key(page_api_key_input)
+                st.rerun()
+    else:
+        if "simplifier_input" not in st.session_state:
+            st.session_state.simplifier_input = ""
+
+        simplifier_input_text = st.text_area(
+            _("Adja meg a bonyolult szöveget az egyszerűsítéshez:"),
+            value=st.session_state.simplifier_input,
+            height=200,
+            key="simplifier_text_area"
+        )
+        simplify_btn = st.button(_("🚀 Szöveg egyszerűsítése"), key="btn_simplify_text", type="primary")
+
+        if simplify_btn and simplifier_input_text:
+            st.session_state.simplifier_input = simplifier_input_text
+            with st.spinner(_("Az ágens dolgozik, egyszerűsíti a szöveget...")):
+                try:
+                    simplified_sentences = st.session_state.agent.simplify_text(simplifier_input_text, lang=lang_code)
+                    st.session_state.simplified_result = simplified_sentences
+                    st.success(_("Sikeres egyszerűsítés!"))
+                except Exception as e:
+                    st.error(_("Hiba történt a feldolgozás során: {e}").format(e=e))
+
+        if "simplified_result" in st.session_state and st.session_state.simplified_result:
+            st.write("---")
+            st.subheader(_("Egyszerűsített mondatok"))
+
+            for idx, sentence_text in enumerate(st.session_state.simplified_result):
+                speech_lang = "hu-HU" if lang_code == "hu" else "en-US"
+                btn_tooltip = _("🔊 Felolvasás")
+                bootstrap_tag = f"<style>{bootstrap_css}</style>" if 'bootstrap_css' in os.environ or 'bootstrap_css' in globals() else ""
+
+                card_html = f"""
+                {bootstrap_tag}
+                <style>
+                    body {{
+                        margin: 0;
+                        padding: 4px;
+                        background: transparent;
+                    }}
+                    .card {{
+                        background-color: #e2e8f0 !important;
+                        border-color: rgba(128, 128, 128, 0.15) !important;
+                    }}
+                    .speak-btn-custom {{
+                        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+                        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+                        transition: transform 0.2s, filter 0.2s;
+                        border: none !important;
+                    }}
+                    .speak-btn-custom:hover {{
+                        transform: scale(1.08);
+                        filter: brightness(1.1);
+                    }}
+                </style>
+                <div class="card p-3 d-flex flex-row justify-content-between align-items-center border-start border-primary border-4 shadow-sm">
+                    <div class="fs-5 fw-bold" style="color: #1e293b !important;">{sentence_text}</div>
+                    <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center speak-btn-custom"
+                            style="width: 44px; height: 44px; min-width: 44px; min-height: 44px; font-size: 18px;"
+                            id="speak-btn-simp-{idx}"
+                            title="{btn_tooltip}">🔊</button>
+                </div>
+                <script>
+                    document.getElementById('speak-btn-simp-{idx}').addEventListener('click', function() {{
+                        window.speechSynthesis.cancel();
+                        var utterance = new SpeechSynthesisUtterance({repr(sentence_text)});
+                        var speechLang = '{speech_lang}';
+                        utterance.lang = speechLang;
                         utterance.rate = {speech_rate};
                         var voices = window.speechSynthesis.getVoices();
                         var matchingVoice = null;
                         for (var i = 0; i < voices.length; i++) {{
-                            if (voices[i].lang.toLowerCase() === utterance.lang.toLowerCase()) {{
+                            if (voices[i].lang.toLowerCase() === speechLang.toLowerCase()) {{
                                 matchingVoice = voices[i];
                                 break;
                             }}
                         }}
                         if (!matchingVoice) {{
-                            var prefix = utterance.lang.split('-')[0].toLowerCase();
+                            var langPrefix = speechLang.split('-')[0].toLowerCase();
                             for (var i = 0; i < voices.length; i++) {{
-                                if (voices[i].lang.toLowerCase().startsWith(prefix)) {{
+                                if (voices[i].lang.toLowerCase().startsWith(langPrefix)) {{
                                     matchingVoice = voices[i];
                                     break;
                                 }}
@@ -808,22 +952,16 @@ with col2:
                             utterance.voice = matchingVoice;
                         }}
                         window.speechSynthesis.speak(utterance);
-                    }}
+                    }});
                 </script>
                 """
-                components.html(quiz_card_html, height=160)
+                components.html(card_html, height=95)
 
-                # HU: Ha a gyermek rákattint a gombra (a gomb felirata fordított)
-                # EN: Triggered when child clicks answer button (translated label)
-                btn_label = _("Ez a(z) {word}").format(word=option['word'])
-                if st.button(btn_label, key=f"btn_{idx}"):
-                    if option["is_correct"]:
-                        st.balloons() # HU: Látványos animáció / EN: Fun balloons animation
-                        st.success(_("🌟 Szuper! Ez a helyes válasz! 🌟"))
-                    else:
-                        st.error(_("❌ Próbáld meg még egyszer! ❌"))
-    else:
-        st.info(_("Kattints a bal oldalon a 'Vizuális anyag generálása' gombra a kezdéshez."))
+            st.write("---")
+            st.subheader(_("Másolható egyszerűsített szöveg"))
+            combined_text = "\n".join(st.session_state.simplified_result)
+            st.text_area("", value=combined_text, height=150, key="copyable_simplified_output")
+
 
 
 # ==============================================================================

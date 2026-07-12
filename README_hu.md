@@ -74,7 +74,7 @@ A projekt fájlstruktúrája és szerepkörei:
 ### 1. lépés: Másolja be a projekt mappájába
 
 ```bash
-cd 202606
+cd VisualBridge
 ```
 
 ### 2. lépés: Hozzon létre egy virtuális környezetet
@@ -104,8 +104,15 @@ Nyissa meg a `.env` fájlt, és adja meg a Gemini API kulcsát:
 GEMINI_API_KEY=a_te_valodi_gemini_api_kulcsod
 ```
 
-**Megjegyzés:**
-> Ha a `GEMINI_API_KEY` üresen marad, az alkalmazás automatikusan **szimulációs (mock) módba** lép és a sablonokból dolgozik.
+> [!IMPORTANT]
+> **API kulcs követelmények és kompatibilitás:**
+>
+> - **VisualBridge (Fő funkció):** Működik API kulcs nélkül is (**szimulációs/mock módban**), ahol előre definiált sablonokból és alapszintű elemzéssel végzi a piktogram leképezést.
+> - **Szövegegyszerűsítő (Text Simplifier):** Ennek a dedikált funkciónak a használatához **mindenképpen valós Google Gemini API kulcs szükséges**.
+> - **Kizárólag Google Gemini API kulcs használható:** Más szolgáltatók kulcsai (pl. OpenAI, Mistral, DeepSeek, Claude) hitelesítési hibát okoznak, mivel az ágens a Google ADK keretrendszerére és a `gemini-3.5-flash` modellre épül.
+>
+> **Hogyan szerezhet ingyenes Gemini API kulcsot?**
+> Látogasson el a [Google AI Studio](https://aistudio.google.com/) oldalára, ahol ingyenesen vagy rendkívül kedvező feltételekkel generálhat saját API kulcsot.
 
 ---
 

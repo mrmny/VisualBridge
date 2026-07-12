@@ -113,7 +113,14 @@ Open `.env` and fill in your Gemini API key:
 GEMINI_API_KEY=your_actual_gemini_api_key
 ```
 
-> If `GEMINI_API_KEY` is not provided or matches the placeholder, the application automatically boots into **Mock (Simulation) Mode** using preconfigured templates.
+> [!IMPORTANT]
+> **Only Google Gemini API keys are supported!**
+> Because this application is built using the official Google ADK (Agent Development Kit) and leverages the `gemini-3.5-flash` model, API keys from other providers (e.g. OpenAI, Claude, DeepSeek, Mistral) will fail to authenticate.
+>
+> **How to get a free Gemini API key?**
+> You can obtain an API key for free (with generous free-tier limits) at [Google AI Studio](https://aistudio.google.com/).
+>
+> **Note:** If `GEMINI_API_KEY` is not provided or matches the placeholder, the application automatically boots into **Mock (Simulation) Mode** using preconfigured templates.
 
 ---
 

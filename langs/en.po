@@ -135,3 +135,51 @@ msgstr "🔊 Speech Settings"
 
 msgid "Beszéd sebessége (0.5 - lassú, 1.0 - normál):"
 msgstr "Speech rate (0.5 - slow, 1.0 - normal):"
+
+msgid "🧭 Navigáció"
+msgstr "🧭 Navigation"
+
+msgid "Válasszon funkciót:"
+msgstr "Choose feature:"
+
+msgid "VisualBridge"
+msgstr "VisualBridge"
+
+msgid "Text Simplifier"
+msgstr "Text Simplifier"
+
+msgid "✍️ VisualBridge – Könnyen Érthető Szövegegyszerűsítő"
+msgstr "✍️ VisualBridge – Easy-to-Read Text Simplifier"
+
+msgid "Komplex szövegek átalakítása egyszerű tőmondatokká a könnyebb megértés érdekében."
+msgstr "Transform complex texts into simple sentences for easier comprehension."
+
+msgid "Adja meg a bonyolult szöveget az egyszerűsítéshez:"
+msgstr "Enter the complex text for simplification:"
+
+msgid "Egyszerűsített mondatok"
+msgstr "Simplified sentences"
+
+msgid "Másolható egyszerűsített szöveg"
+msgstr "Copyable simplified text"
+
+msgid "A Szövegegyszerűsítő használatához valós Gemini API kulcs szükséges."
+msgstr "The Text Simplifier requires a valid Gemini API key."
+
+msgid "Kérjük, adjon meg egy kulcsot a hozzáférés feloldásához."
+msgstr "Please provide an API key to unlock access."
+
+msgid "🚀 Szöveg egyszerűsítése"
+msgstr "🚀 Simplify Text"
+
+msgid "Az ágens dolgozik, egyszerűsíti a szöveget..."
+msgstr "The agent is working, simplifying the text..."
+
+msgid "Sikeres egyszerűsítés!"
+msgstr "Simplification successful!"
+
+msgid "Adja meg a Gemini API kulcsot itt:"
+msgstr "Enter Gemini API key here:"
+
+msgid "Kulcs mentése"
+msgstr "Save key"

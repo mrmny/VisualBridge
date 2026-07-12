@@ -56,6 +56,23 @@ class TestVisualBridgeSkills(unittest.TestCase):
         self.assertEqual(quiz["question"], "Which one is water?")
         self.assertGreater(len(quiz["options"]), 0)
 
+    def test_new_translations_loaded(self):
+        """
+        Verify that new navigation and simplifier translation keys are loaded and translated properly.
+        """
+        from i18n import TranslationManager
+        mgr = TranslationManager()
+
+        # Test in Hungarian
+        mgr.set_language("hu")
+        self.assertEqual(mgr.gettext("Text Simplifier"), "Szövegegyszerűsítő")
+        self.assertEqual(mgr.gettext("🧭 Navigáció"), "🧭 Navigáció")
+
+        # Test in English
+        mgr.set_language("en")
+        self.assertEqual(mgr.gettext("Text Simplifier"), "Text Simplifier")
+        self.assertEqual(mgr.gettext("🧭 Navigáció"), "🧭 Navigation")
+
 
 class TestVisualBridgeAgent(unittest.TestCase):
     """
